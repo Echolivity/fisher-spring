@@ -1,0 +1,38 @@
+{
+  "name": "Fisher Reference",
+  "number": 1,
+  "category": "REF",
+  "tags": [
+    "neutral",
+    "authentic",
+    "send"
+  ],
+  "description": "Fisher K-10 Dynamic Spacexpander IR, convolution only, natural decay. Third-party IR (Freesound 528139); its arrival times (within 6%) and spectrum (within ~2 dB below 4 kHz) match the K-10 service manual, but it was not captured by this project.",
+  "ir": "TP_FISHER_K10_derickgtwk_STEREO_96k",
+  "params": {
+    "drive": 0.15,
+    "decay": 8.0,
+    "tone": 0.0,
+    "damping": 0.0,
+    "mix": 1.0,
+    "output": -2.0,
+    "boing": 0.4,
+    "tension": 0.44,
+    "dispersion": 0.55,
+    "resonance": 0.35,
+    "movement": 0.3,
+    "engine_mode": 0,
+    "ir_level": 0.0,
+    "model_level": 0.0,
+    "blend": 0.5,
+    "feedback": 0.0,
+    "fb_tone": 0.0,
+    "fb_drive": 0.2,
+    "fb_damping": 0.3,
+    "self_osc": 0.0,
+    "predelay": 0,
+    "width": 1.0,
+    "modulation": 0.15
+  },
+  "schema": 1
+}

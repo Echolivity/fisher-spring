@@ -1,0 +1,30 @@
+{
+  "id": "TP_FISHER_K10_derickgtwk_STEREO_96k",
+  "authenticity": "THIRD-PARTY",
+  "hardware": {
+    "maker": "Fisher",
+    "model": "K-10 Dynamic Spacexpander (per uploader)"
+  },
+  "description": "Stereo IR of a Fisher K-10, Freesound #528139 by derickgtwk. Contains the unit's dry path as a t=0 spike (processed variant removes it).",
+  "capture": {
+    "evidence": [
+      "Early arrivals 30.0/39.1/89.2/116.3 ms (L), 30.9/39.2/91.7/116.4 ms (R) vs K-10 manual 29/37/87/111 ms (within 2.6-5.7%)",
+      "Wet-path spectrum within ~2 dB of the K-10 circuit's tank-feed + recovery network (63 Hz-4 kHz)",
+      "RT60 2.32 s at 300 Hz vs manual spec 'max 2 s at 300 cps'"
+    ],
+    "source": "https://freesound.org/s/528139 (derickgtwk)"
+  },
+  "sample_rate": 96000,
+  "channels": 2,
+  "length_s": 5.0,
+  "original_filename": "k10.wav",
+  "processing_history": [
+    "copied unmodified from user upload"
+  ],
+  "processing": {
+    "remove_direct_ms": 3.0
+  },
+  "license": "UNVERIFIED - supplied by project owner; confirm before redistribution",
+  "redistributable": false,
+  "added": "2026-11-14"
+}

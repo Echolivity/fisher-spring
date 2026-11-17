@@ -1,0 +1,40 @@
+{
+  "name": "Deep Dub Spring",
+  "number": 3,
+  "category": "DUB",
+  "tags": [
+    "send",
+    "warm",
+    "rimshot",
+    "snare",
+    "regeneration"
+  ],
+  "description": "Long, warm send spring with gentle regeneration. The default rimshot/snare send.",
+  "ir": "TP_FISHER_K10_derickgtwk_STEREO_96k",
+  "params": {
+    "drive": 0.3,
+    "decay": 3.5,
+    "tone": -0.25,
+    "damping": 0.45,
+    "mix": 1.0,
+    "output": -6.0,
+    "boing": 0.55,
+    "tension": 0.35,
+    "dispersion": 0.6,
+    "resonance": 0.4,
+    "movement": 0.3,
+    "engine_mode": 2,
+    "ir_level": 0.0,
+    "model_level": 0.0,
+    "blend": 0.4,
+    "feedback": 0.45,
+    "fb_tone": -0.2,
+    "fb_drive": 0.3,
+    "fb_damping": 0.4,
+    "self_osc": 0.0,
+    "predelay": 12,
+    "width": 1.0,
+    "modulation": 0.15
+  },
+  "schema": 1
+}

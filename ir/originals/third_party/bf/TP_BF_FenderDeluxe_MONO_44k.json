@@ -1,0 +1,23 @@
+{
+  "id": "TP_BF_FenderDeluxe_MONO_44k",
+  "authenticity": "THIRD-PARTY",
+  "hardware": {
+    "maker": "Fender",
+    "model": "Deluxe (amp spring tank, per file name)"
+  },
+  "description": "Mono guitar-amp spring IR from the 'BF Spring Reverb Samples Only' pack.",
+  "capture": {
+    "source": "BF Spring Reverb Samples Only (user upload)"
+  },
+  "sample_rate": 44100,
+  "channels": 1,
+  "length_s": 4.266,
+  "original_filename": "Fender Deluxe Spring.wav",
+  "processing_history": [
+    "copied unmodified from user upload"
+  ],
+  "processing": {},
+  "license": "UNVERIFIED - supplied by project owner; confirm before redistribution",
+  "redistributable": false,
+  "added": "2026-11-14"
+}

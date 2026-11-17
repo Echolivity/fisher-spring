@@ -1,0 +1,23 @@
+{
+  "id": "TP_MT_Spring_Webcor",
+  "authenticity": "THIRD-PARTY",
+  "hardware": {
+    "maker": null,
+    "model": "1970s spring reverb through a Webcor (tape/radio) amp"
+  },
+  "description": "1970s spring reverb through a Webcor (tape/radio) amp - Millertone free IR collection.",
+  "capture": {
+    "source": "Millertone IRs (user upload)"
+  },
+  "sample_rate": 44100,
+  "channels": 1,
+  "length_s": 3.988,
+  "original_filename": "Spring + Webcor.wav",
+  "processing_history": [
+    "copied unmodified from user upload"
+  ],
+  "processing": {},
+  "license": "UNVERIFIED - supplied by project owner; confirm before redistribution",
+  "redistributable": false,
+  "added": "2026-11-14"
+}

@@ -1,0 +1,141 @@
+[
+  {
+    "number": 1,
+    "name": "Fisher Reference",
+    "category": "REF",
+    "tags": [
+      "neutral",
+      "authentic",
+      "send"
+    ],
+    "ir": "TP_FISHER_K10_derickgtwk_STEREO_96k",
+    "description": "Fisher K-10 Dynamic Spacexpander IR, convolution only, natural decay. Third-party IR (Freesound 528139); its arrival times (within 6%) and spectrum (within ~2 dB below 4 kHz) match the K-10 service manual, but it was not captured by this project.",
+    "file": "01 REF - Fisher Reference.json"
+  },
+  {
+    "number": 2,
+    "name": "Vintage Splash",
+    "category": "REF",
+    "tags": [
+      "bright",
+      "splash",
+      "drip",
+      "guitar"
+    ],
+    "ir": "TP_BF_FenderDeluxe_MONO_44k",
+    "description": "Bright parallel hybrid: real-tank body with model boing and splash on hits. Guitar-amp style drip.",
+    "file": "02 REF - Vintage Splash.json"
+  },
+  {
+    "number": 3,
+    "name": "Deep Dub Spring",
+    "category": "DUB",
+    "tags": [
+      "send",
+      "warm",
+      "rimshot",
+      "snare",
+      "regeneration"
+    ],
+    "ir": "TP_FISHER_K10_derickgtwk_STEREO_96k",
+    "description": "Long, warm send spring with gentle regeneration. The default rimshot/snare send.",
+    "file": "03 DUB - Deep Dub Spring.json"
+  },
+  {
+    "number": 4,
+    "name": "Metallic Resonance",
+    "category": "TEX",
+    "tags": [
+      "metallic",
+      "resonant",
+      "synth"
+    ],
+    "ir": "SYN_ShortTank3S_B",
+    "description": "Model-led, high resonance and dispersion: singing metallic mode, tuned by Tension.",
+    "file": "04 TEX - Metallic Resonance.json"
+  },
+  {
+    "number": 5,
+    "name": "Heavy Pressure",
+    "category": "DUB",
+    "tags": [
+      "drive",
+      "distortion",
+      "bass",
+      "loud"
+    ],
+    "ir": "SYN_DarkTank2S_C",
+    "description": "Hard-driven tank with saturated feedback - thick, compressed, distorted dub wall.",
+    "file": "05 DUB - Heavy Pressure.json"
+  },
+  {
+    "number": 6,
+    "name": "Dark Chamber",
+    "category": "REF",
+    "tags": [
+      "dark",
+      "smooth",
+      "vocal",
+      "keys"
+    ],
+    "ir": "SYN_DarkTank2S_C",
+    "description": "Dark, smooth tank - spring as a small room. Low splash, low movement.",
+    "file": "06 REF - Dark Chamber.json"
+  },
+  {
+    "number": 7,
+    "name": "Infinite Dub",
+    "category": "DUB",
+    "tags": [
+      "infinite",
+      "self-oscillation",
+      "performance",
+      "send"
+    ],
+    "ir": "TP_FISHER_K10_derickgtwk_STEREO_96k",
+    "description": "Feedback at max with some self-oscillation: holds and builds. Ride Feedback/Self-Osc live; guard is partly off.",
+    "file": "07 DUB - Infinite Dub.json"
+  },
+  {
+    "number": 8,
+    "name": "Broken Spring",
+    "category": "TEX",
+    "tags": [
+      "broken",
+      "unstable",
+      "lo-fi",
+      "fx"
+    ],
+    "ir": "SYN_SplashTank1S_D",
+    "description": "Max movement and boing: jolts, pitch lurches and clatter, like a tank on a shaking amp.",
+    "file": "08 TEX - Broken Spring.json"
+  },
+  {
+    "number": 9,
+    "name": "Short Percussion Spring",
+    "category": "PERC",
+    "tags": [
+      "short",
+      "tight",
+      "percussion",
+      "hats"
+    ],
+    "ir": "TP_MT_70sStereoSpring_01",
+    "description": "Short, tight, bright tank for hats, shakers and percussion loops. Keeps transients.",
+    "file": "09 PERC - Short Percussion Spring.json"
+  },
+  {
+    "number": 10,
+    "name": "Experimental Mechanical",
+    "category": "TEX",
+    "tags": [
+      "drone",
+      "mechanical",
+      "experimental",
+      "pads"
+    ],
+    "ir": "SYN_DarkTank2S_C",
+    "description": "Model > IR with saturated feedback and slow modulation: grinding, mechanical drones from chords and pads.",
+    "file": "10 TEX - Experimental Mechanical.json"
+  }
+]

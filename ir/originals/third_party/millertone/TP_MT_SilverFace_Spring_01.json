@@ -1,0 +1,23 @@
+{
+  "id": "TP_MT_SilverFace_Spring_01",
+  "authenticity": "THIRD-PARTY",
+  "hardware": {
+    "maker": null,
+    "model": "Fender silver-face combo amp with its spring reverb"
+  },
+  "description": "Fender silver-face combo amp with its spring reverb - Millertone free IR collection.",
+  "capture": {
+    "source": "Millertone IRs (user upload)"
+  },
+  "sample_rate": 44100,
+  "channels": 2,
+  "length_s": 4.087,
+  "original_filename": "Silver Face + Spring Reverb (01).wav",
+  "processing_history": [
+    "copied unmodified from user upload"
+  ],
+  "processing": {},
+  "license": "UNVERIFIED - supplied by project owner; confirm before redistribution",
+  "redistributable": false,
+  "added": "2026-11-14"
+}

@@ -1,0 +1,158 @@
+// ECHOLIVITY gen~ CONVOLUTION
+// Uniformly partitioned overlap-save convolution, mono in -> stereo out.
+// Same algorithm as reference/engine.py PartitionedConvolver, but real-time:
+//  - every B samples: IFFT the accumulated spectra (L,R), FFT the newest 2B input frame
+//  - the K partition multiply-accumulates are spread evenly over the B samples
+//    of each block, so CPU per sample is flat apart from the 3 FFTs at the boundary
+//  - latency = 2B samples (B = 512 at <=48 kHz, 1024 at 88.2/96 kHz -> ~21-23 ms),
+//    which behaves like a fixed extra predelay on the IR path (documented)
+// H spectra are written by ir_loader.js into buffer ---echH (2 channels):
+//    sample index (k*(B+1) + bin)*2 + {0 re, 1 im}
+// in1 mono input; out1 L, out2 R
+
+Param nparts(0, min=0, max=400);
+Param bsize(512, min=64, max=1024);
+Buffer H("echH_unbound");
+
+Data inb(2048);
+Data fdl(820000);
+Data acc(2050, 2);
+Data outb(1024, 2);
+Data re(2048);
+Data im(2048);
+Data tw(1024, 2);
+History cnt(0);
+History pos(0);
+History twn(0);
+History lastK(0);
+
+B = floor(bsize);
+N = 2 * B;
+Kp = floor(nparts);
+
+// (re)initialise twiddles and state on block-size or partition-count change
+if (twn != N || lastK != Kp) {
+	for (i = 0; i < N / 2; i += 1) {
+		poke(tw, cos(twopi * i / N), i, 0);
+		poke(tw, sin(twopi * i / N), i, 1);
+	}
+	for (i = 0; i < 2 * (B + 1); i += 1) {
+		poke(acc, 0, i, 0);
+		poke(acc, 0, i, 1);
+	}
+	for (i = 0; i < B; i += 1) {
+		poke(outb, 0, i, 0);
+		poke(outb, 0, i, 1);
+	}
+	for (i = 0; i < Kp * (B + 1) * 2; i += 1) {
+		poke(fdl, 0, i);
+	}
+	twn = N;
+	lastK = Kp;
+	cnt = 0;
+	pos = 0;
+}
+
+c = cnt;
+poke(inb, in1, B + c);
+out1 = peek(outb, c, 0);
+out2 = peek(outb, c, 1);
+
+// spread multiply-accumulate: partitions k0..k1-1 on this sample
+if (Kp > 0) {
+	k0 = floor(c * Kp / B);
+	k1 = floor((c + 1) * Kp / B);
+	for (k = k0; k < k1; k += 1) {
+		slot = (pos + k) % Kp;
+		fb = slot * (B + 1) * 2;
+		hb = k * (B + 1) * 2;
+		for (b = 0; b <= B; b += 1) {
+			xr = peek(fdl, fb + 2 * b);
+			xi = peek(fdl, fb + 2 * b + 1);
+			hlr = peek(H, hb + 2 * b, 0);
+			hli = peek(H, hb + 2 * b + 1, 0);
+			hrr = peek(H, hb + 2 * b, 1);
+			hri = peek(H, hb + 2 * b + 1, 1);
+			poke(acc, peek(acc, 2 * b, 0) + xr * hlr - xi * hli, 2 * b, 0);
+			poke(acc, peek(acc, 2 * b + 1, 0) + xr * hli + xi * hlr, 2 * b + 1, 0);
+			poke(acc, peek(acc, 2 * b, 1) + xr * hrr - xi * hri, 2 * b, 1);
+			poke(acc, peek(acc, 2 * b + 1, 1) + xr * hri + xi * hrr, 2 * b + 1, 1);
+		}
+	}
+}
+
+// block boundary: IFFT L, IFFT R, FFT newest input frame
+if (c >= B - 1) {
+	for (job = 0; job < 3; job += 1) {
+		sgn = -1;
+		if (job < 2) {
+			sgn = 1;
+			for (b = 0; b <= B; b += 1) {
+				poke(re, peek(acc, 2 * b, job), b);
+				poke(im, peek(acc, 2 * b + 1, job), b);
+				poke(acc, 0, 2 * b, job);
+				poke(acc, 0, 2 * b + 1, job);
+			}
+			for (b = 1; b < B; b += 1) {
+				poke(re, peek(re, b), N - b);
+				poke(im, -peek(im, b), N - b);
+			}
+		} else {
+			for (b = 0; b < N; b += 1) {
+				poke(re, peek(inb, b), b);
+				poke(im, 0, b);
+			}
+		}
+		// in-place radix-2 FFT, sign sgn (-1 forward, +1 inverse)
+		j = 0;
+		for (i = 0; i < N - 1; i += 1) {
+			if (i < j) {
+				tr = peek(re, i); ti = peek(im, i);
+				poke(re, peek(re, j), i); poke(im, peek(im, j), i);
+				poke(re, tr, j); poke(im, ti, j);
+			}
+			m = floor(N / 2);
+			while (m >= 1 && j >= m) {
+				j -= m;
+				m = floor(m / 2);
+			}
+			j += m;
+		}
+		len = 2;
+		while (len <= N) {
+			half = floor(len / 2);
+			tstep = floor(N / len);
+			for (i = 0; i < N; i += len) {
+				for (k = 0; k < half; k += 1) {
+					wr = peek(tw, k * tstep, 0);
+					wi = sgn * peek(tw, k * tstep, 1);
+					pr = peek(re, i + k + half); pi2 = peek(im, i + k + half);
+					vr = pr * wr - pi2 * wi;
+					vi = pr * wi + pi2 * wr;
+					ur = peek(re, i + k); ui = peek(im, i + k);
+					poke(re, ur + vr, i + k); poke(im, ui + vi, i + k);
+					poke(re, ur - vr, i + k + half); poke(im, ui - vi, i + k + half);
+				}
+			}
+			len *= 2;
+		}
+		if (job < 2) {
+			for (b = 0; b < B; b += 1) {
+				poke(outb, fixdenorm(peek(re, B + b) / N), b, job);
+			}
+		} else if (Kp > 0) {
+			pos = (pos - 1 + Kp) % Kp;
+			base = pos * (B + 1) * 2;
+			for (b = 0; b <= B; b += 1) {
+				poke(fdl, peek(re, b), base + 2 * b);
+				poke(fdl, peek(im, b), base + 2 * b + 1);
+			}
+			for (b = 0; b < B; b += 1) {
+				poke(inb, peek(inb, B + b), b);
+			}
+		}
+	}
+	cnt = 0;
+} else {
+	cnt = c + 1;
+}

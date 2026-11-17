@@ -1,0 +1,39 @@
+{
+  "name": "Short Percussion Spring",
+  "number": 9,
+  "category": "PERC",
+  "tags": [
+    "short",
+    "tight",
+    "percussion",
+    "hats"
+  ],
+  "description": "Short, tight, bright tank for hats, shakers and percussion loops. Keeps transients.",
+  "ir": "TP_MT_70sStereoSpring_01",
+  "params": {
+    "drive": 0.15,
+    "decay": 0.7,
+    "tone": 0.3,
+    "damping": 0.25,
+    "mix": 0.3,
+    "output": 0.0,
+    "boing": 0.35,
+    "tension": 0.85,
+    "dispersion": 0.45,
+    "resonance": 0.25,
+    "movement": 0.15,
+    "engine_mode": 2,
+    "ir_level": 0.0,
+    "model_level": 0.0,
+    "blend": 0.35,
+    "feedback": 0.0,
+    "fb_tone": 0.0,
+    "fb_drive": 0.2,
+    "fb_damping": 0.3,
+    "self_osc": 0.0,
+    "predelay": 0.0,
+    "width": 1.4,
+    "modulation": 0.15
+  },
+  "schema": 1
+}

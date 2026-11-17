@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+*.log
+renders/
+qa/bounced/
+qa/results/
+# Third-party audio and reference documents: licenses not confirmed, keep local only.
+# Their provenance sidecars (*.json) ARE tracked.
+ir/originals/third_party/**/*.wav
+ir/processed/TP_*
+docs/sources/*
+!docs/sources/README.md

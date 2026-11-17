@@ -1,0 +1,39 @@
+{
+  "name": "Vintage Splash",
+  "number": 2,
+  "category": "REF",
+  "tags": [
+    "bright",
+    "splash",
+    "drip",
+    "guitar"
+  ],
+  "description": "Bright parallel hybrid: real-tank body with model boing and splash on hits. Guitar-amp style drip.",
+  "ir": "TP_BF_FenderDeluxe_MONO_44k",
+  "params": {
+    "drive": 0.35,
+    "decay": 2.2,
+    "tone": 0.35,
+    "damping": 0.15,
+    "mix": 0.4,
+    "output": -3.0,
+    "boing": 0.8,
+    "tension": 0.55,
+    "dispersion": 0.7,
+    "resonance": 0.3,
+    "movement": 0.25,
+    "engine_mode": 2,
+    "ir_level": 0.0,
+    "model_level": 0.0,
+    "blend": 0.45,
+    "feedback": 0.0,
+    "fb_tone": 0.0,
+    "fb_drive": 0.2,
+    "fb_damping": 0.3,
+    "self_osc": 0.0,
+    "predelay": 0.0,
+    "width": 1.0,
+    "modulation": 0.15
+  },
+  "schema": 1
+}

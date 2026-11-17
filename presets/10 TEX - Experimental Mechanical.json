@@ -1,0 +1,39 @@
+{
+  "name": "Experimental Mechanical",
+  "number": 10,
+  "category": "TEX",
+  "tags": [
+    "drone",
+    "mechanical",
+    "experimental",
+    "pads"
+  ],
+  "description": "Model > IR with saturated feedback and slow modulation: grinding, mechanical drones from chords and pads.",
+  "ir": "SYN_DarkTank2S_C",
+  "params": {
+    "drive": 0.6,
+    "decay": 5.0,
+    "tone": 0.0,
+    "damping": 0.2,
+    "mix": 0.5,
+    "output": -6.0,
+    "boing": 0.7,
+    "tension": 0.15,
+    "dispersion": 1.0,
+    "resonance": 0.8,
+    "movement": 0.6,
+    "engine_mode": 4,
+    "ir_level": 0.0,
+    "model_level": 0.0,
+    "blend": 0.5,
+    "feedback": 0.75,
+    "fb_tone": 0.4,
+    "fb_drive": 0.7,
+    "fb_damping": 0.2,
+    "self_osc": 0.15,
+    "predelay": 0.0,
+    "width": 1.6,
+    "modulation": 0.8
+  },
+  "schema": 1
+}

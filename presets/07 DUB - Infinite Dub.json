@@ -1,0 +1,39 @@
+{
+  "name": "Infinite Dub",
+  "number": 7,
+  "category": "DUB",
+  "tags": [
+    "infinite",
+    "self-oscillation",
+    "performance",
+    "send"
+  ],
+  "description": "Feedback at max with some self-oscillation: holds and builds. Ride Feedback/Self-Osc live; guard is partly off.",
+  "ir": "TP_FISHER_K10_derickgtwk_STEREO_96k",
+  "params": {
+    "drive": 0.3,
+    "decay": 6.0,
+    "tone": -0.1,
+    "damping": 0.35,
+    "mix": 1.0,
+    "output": -6.0,
+    "boing": 0.45,
+    "tension": 0.45,
+    "dispersion": 0.6,
+    "resonance": 0.45,
+    "movement": 0.3,
+    "engine_mode": 2,
+    "ir_level": 0.0,
+    "model_level": 0.0,
+    "blend": 0.5,
+    "feedback": 1.0,
+    "fb_tone": 0.0,
+    "fb_drive": 0.45,
+    "fb_damping": 0.5,
+    "self_osc": 0.35,
+    "predelay": 0.0,
+    "width": 1.0,
+    "modulation": 0.15
+  },
+  "schema": 1
+}

@@ -1,0 +1,23 @@
+{
+  "id": "TP_BF_Supro_MONO_44k",
+  "authenticity": "THIRD-PARTY",
+  "hardware": {
+    "maker": "Supro",
+    "model": "amp spring tank (per file name)"
+  },
+  "description": "Mono guitar-amp spring IR from the BF pack.",
+  "capture": {
+    "source": "BF Spring Reverb Samples Only (user upload)"
+  },
+  "sample_rate": 44100,
+  "channels": 1,
+  "length_s": 5.047,
+  "original_filename": "Supro Spring.wav",
+  "processing_history": [
+    "copied unmodified from user upload"
+  ],
+  "processing": {},
+  "license": "UNVERIFIED - supplied by project owner; confirm before redistribution",
+  "redistributable": false,
+  "added": "2026-11-14"
+}

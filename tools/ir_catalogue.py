@@ -1,0 +1,116 @@
+"""IR library management (Dub Organiser tooling).
+
+1. Builds processed variants from originals (never modifies originals):
+   ir/processed/<id>__norm48k.wav  - energy-normalised, 48 kHz, as loaded by the device
+2. Audits the library: every WAV needs a JSON sidecar; content hashes detect
+   duplicates; authenticity must be one of the allowed values; a "FISHER" id
+   requires authenticity == "HARDWARE-VERIFIED" with capture evidence.
+3. Writes ir/catalogue.json and ir/CATALOGUE.md (the asset provenance register).
+
+Exit code 1 if the audit fails (used by the test suite).
+"""
+import glob, hashlib, json, os, sys, math
+import numpy as np
+import soundfile as sf
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT)
+from reference.engine import estimate_rt60  # noqa: E402
+
+ALLOWED = {"SYNTHETIC - not a hardware capture", "HARDWARE-VERIFIED", "HARDWARE-UNVERIFIED", "THIRD-PARTY"}
+REQUIRED = ["id", "authenticity", "sample_rate", "channels", "processing_history", "license"]
+
+
+def sha(path):
+    x, _ = sf.read(path, dtype="float32", always_2d=True)
+    return hashlib.sha256(np.ascontiguousarray(x).tobytes()).hexdigest()[:16]
+
+
+def audit_and_build(write=True):
+    problems = []
+    entries = []
+    hashes = {}
+    for wav in sorted(glob.glob(os.path.join(ROOT, "ir", "originals", "**", "*.wav"), recursive=True)):
+        rel = os.path.relpath(wav, ROOT)
+        side = wav[:-4] + ".json"
+        if not os.path.exists(side):
+            problems.append(f"UNDOCUMENTED: {rel} has no JSON sidecar")
+            continue
+        meta = json.load(open(side))
+        for k in REQUIRED:
+            if k not in meta:
+                problems.append(f"INCOMPLETE: {rel} missing '{k}'")
+        if meta.get("authenticity") not in ALLOWED:
+            problems.append(f"BAD AUTHENTICITY: {rel}: {meta.get('authenticity')}")
+        if "FISHER" in meta.get("id", "").upper():
+            a = meta.get("authenticity")
+            if a not in ("HARDWARE-VERIFIED", "THIRD-PARTY") or not meta.get("capture", {}).get("evidence"):
+                problems.append(f"MISLABEL: {rel} is named Fisher without verification or provenance evidence")
+            if a == "THIRD-PARTY" and not meta["id"].startswith("TP_"):
+                problems.append(f"MISLABEL: {rel} third-party Fisher IR must carry the TP_ prefix")
+        if meta.get("authenticity") == "HARDWARE-VERIFIED" and not meta.get("capture", {}).get("evidence"):
+            problems.append(f"NO EVIDENCE: {rel} claims hardware verification without capture evidence")
+        x, sr = sf.read(wav, always_2d=True)
+        if sr != meta.get("sample_rate") or x.shape[1] != meta.get("channels"):
+            problems.append(f"METADATA MISMATCH: {rel} file is {sr} Hz/{x.shape[1]} ch")
+        h = sha(wav)
+        if h in hashes:
+            problems.append(f"DUPLICATE: {rel} == {hashes[h]}")
+        hashes[h] = rel
+        rt = estimate_rt60(x.mean(axis=1), sr)
+        # processed variant
+        proc_rel = os.path.join("ir", "processed", meta["id"] + "__norm48k.wav")
+        if write:
+            from scipy.signal import resample_poly
+            from reference.irlib import apply_processing
+            y = apply_processing(x, sr, meta.get("processing"))
+            if sr != 48000:
+                g = math.gcd(sr, 48000)
+                y = resample_poly(y, 48000 // g, sr // g, axis=0)
+            y /= math.sqrt(np.sum(y ** 2) / y.shape[1])
+            y *= 0.05                                  # keep headroom in the file; loader renormalises
+            os.makedirs(os.path.join(ROOT, "ir", "processed"), exist_ok=True)
+            sf.write(os.path.join(ROOT, proc_rel), y.astype(np.float32), 48000, subtype="FLOAT")
+        entries.append({
+            "id": meta["id"], "authenticity": meta["authenticity"], "hardware": meta.get("hardware"),
+            "original": os.path.relpath(wav, ROOT), "processed": proc_rel,
+            "sample_rate": sr, "channels": x.shape[1], "length_s": round(x.shape[0] / sr, 3),
+            "rt60_s": round(rt, 2), "sha256_16": h, "license": meta.get("license"),
+            "redistributable": meta.get("redistributable", True),
+            "evidence": meta.get("capture", {}).get("evidence", []),
+            "description": meta.get("description", ""),
+            "processing_history": meta.get("processing_history", []) + (
+                [f"processed variant: direct path removed (first {meta['processing']['remove_direct_ms']} ms)"]
+                if meta.get("processing", {}).get("remove_direct_ms") else []) +
+                ["processed variant: resample to 48 kHz, energy-normalise x0.05"],
+        })
+    if write:
+        with open(os.path.join(ROOT, "ir", "catalogue.json"), "w") as fh:
+            json.dump(entries, fh, indent=2)
+        lines = ["# Echolivity IR catalogue (asset provenance register)", "",
+                 "Generated by `tools/ir_catalogue.py`. Do not edit by hand.", "",
+                 "**Authenticity:** no IR here was captured or verified by this project. `TP_` = third-party file "
+                 "supplied by the project owner; `SYN_` = synthetic. The Fisher K-10 entry is third-party with "
+                 "timing/spectral evidence against the K-10 service manual (see docs/FISHER_K10.md). "
+                 "**Redistributable = no** means the license is unconfirmed: do not ship it publicly.", "",
+                 "| ID | Authenticity | Ch | SR | Length | RT60 | Redistributable | Hash |",
+                 "|---|---|---|---|---|---|---|---|"]
+        for e in entries:
+            lines.append(f"| {e['id']} | {e['authenticity']} | {e['channels']} | {e['sample_rate']} | "
+                         f"{e['length_s']} s | {e['rt60_s']} s | {'yes' if e['redistributable'] else '**no**'} | `{e['sha256_16']}` |")
+        lines += ["", "## Descriptions", ""]
+        for e in entries:
+            lines.append(f"- **{e['id']}** - {e['description']} License: {e['license']}")
+            for ev in e["evidence"]:
+                lines.append(f"  - evidence: {ev}")
+        lines += ["", "## Audit", ""] + ([f"- {p}" for p in problems] or ["- No problems found."])
+        open(os.path.join(ROOT, "ir", "CATALOGUE.md"), "w").write("\n".join(lines) + "\n")
+    return entries, problems
+
+
+if __name__ == "__main__":
+    e, p = audit_and_build()
+    print(f"{len(e)} IRs catalogued, {len(p)} problems")
+    for x in p:
+        print(" ", x)
+    sys.exit(1 if p else 0)

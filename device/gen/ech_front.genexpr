@@ -1,0 +1,60 @@
+// ECHOLIVITY gen~ FRONT
+// Port of reference/engine.py: input_stage(), feedback injection, predelay,
+// convolution send routing.
+// in1 L, in2 R, in3 dub feedback return (tapout~), in4 spring->IR send (tapout~)
+// out1 engine input eng (mono), out2 convolution input
+
+Param drive(0.25, min=0, max=1);
+Param predelay(0, min=0, max=250);
+Param engine_mode(2, min=0, max=4);
+
+History pe_lp(0);
+History de_lp(0);
+History dcx(0);
+History dcy(0);
+History pd_sm(-1);
+Delay pd(30000);
+
+asym(x, k, b) {
+	tb = tanh(k * b);
+	s2 = 1 - tb * tb;
+	return (tanh(k * (x + b)) - tb) / (k * s2);
+}
+
+mono = 0.5 * (in1 + in2);
+
+a_pe = 1 - exp(-twopi * 1500 / samplerate);
+pe = 1.5 * drive;
+k = pow(10, drive * 1.5);
+makeup = pow(k, -0.8);
+h = clamp((drive - 0.6) / 0.4, 0, 1);
+r_dc = 1 - twopi * 10 / samplerate;
+
+// pre-emphasis -> soft/hard saturation -> de-emphasis -> DC block
+p1 = pe_lp + a_pe * (mono - pe_lp);
+pe_lp = fixdenorm(p1);
+xe = mono + pe * (mono - p1);
+kx = k * xe;
+soft = asym(kx, 1, 0.15);
+hard = kx / pow(1 + pow(abs(kx), 6), 1 / 6);
+y = ((1 - h) * soft + h * hard) * makeup;
+d1 = de_lp + a_pe * (y - de_lp);
+de_lp = fixdenorm(d1);
+y2 = d1 + (y - d1) / (1 + pe);
+dc = y2 - dcx + r_dc * dcy;
+dcx = y2;
+dcy = fixdenorm(dc);
+
+// dub feedback enters after the drive stage, before predelay (inside the loop)
+e0 = dc + in3;
+
+// predelay (smoothed, linear interpolation)
+pd_t = predelay * 0.001 * samplerate;
+pd_s = pd_sm < 0 ? pd_t : pd_sm + (pd_t - pd_sm) * 0.002;   // ~10 ms glide, starts on target
+pd_sm = pd_s;
+pd.write(e0);
+eng = pd_s < 1 ? e0 : pd.read(pd_s, interp="linear");
+
+out1 = eng;
+// Model>IR: the IR is excited by the spring output plus half the direct signal
+out2 = engine_mode > 3.5 ? (in4 + 0.5 * eng) : eng;

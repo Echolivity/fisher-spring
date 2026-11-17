@@ -1,0 +1,20 @@
+{
+  "passed": true,
+  "results": {
+    "param_defaults_match": {
+      "mismatches": []
+    },
+    "model_default": {
+      "max_rel_error": 3.1175695384188817e-07,
+      "correlation": 0.9999999999999973
+    },
+    "model_drive_dark": {
+      "max_rel_error": 6.567921018460168e-07,
+      "correlation": 0.9999999999999901
+    },
+    "parallel_ir": {
+      "max_rel_error": 3.212591901121526e-07,
+      "correlation": 0.9999999999999983
+    }
+  }
+}

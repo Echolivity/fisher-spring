@@ -1,0 +1,23 @@
+{
+  "id": "TP_BF_BirdVerb_Supro_ST_44k",
+  "authenticity": "THIRD-PARTY",
+  "hardware": {
+    "maker": "Supro",
+    "model": "(per file name)"
+  },
+  "description": "Stereo 'Bird-Verb' variant. NOTE: statistics match 'Fender Deluxe Spring' - possible name swap in the source pack.",
+  "capture": {
+    "source": "BF pack (user upload)"
+  },
+  "sample_rate": 44100,
+  "channels": 2,
+  "length_s": 6.388,
+  "original_filename": "Bird-Verb Supro.wav",
+  "processing_history": [
+    "copied unmodified from user upload"
+  ],
+  "processing": {},
+  "license": "UNVERIFIED - supplied by project owner; confirm before redistribution",
+  "redistributable": false,
+  "added": "2026-11-14"
+}

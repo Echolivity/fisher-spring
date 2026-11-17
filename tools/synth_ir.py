@@ -1,0 +1,119 @@
+"""Generate the SYNTHETIC spring IRs in ir/originals/.
+
+These are NOT hardware captures. They are computed from a frequency-domain
+dispersion model of a helical spring (exact group-delay curve, closed-form sum
+of all reflections) - a different method from the real-time allpass model, so
+the IR engine and model engine don't duplicate each other's resonances.
+
+Per spring:  H(f) = B(f) e^{-j phi(f)} / (1 - R(f) e^{-j 2 phi(f)})
+  phi(f)  = 2*pi * integral of tau(f) df        (one-way phase)
+  tau(f)  = T0 * (0.55 + 0.45 * sqrt(f_t / (f + f_t)))   HF arrives first,
+            plus a slow-wave band above the transition frequency fc
+  R(f)    = round-trip reflection gain from per-band RT60
+  B(f)    = transducer band-pass
+
+Usage: python tools/synth_ir.py  (writes WAV + JSON sidecars)
+"""
+import json, math, os, sys, datetime
+import numpy as np
+import soundfile as sf
+
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+SR = 48000
+
+
+def spring_tf(f, T0, rt_lo, rt_hi, f_t=600.0, fc=4200.0, chirp=0.45, bp=(110.0, 5200.0)):
+    df = f[1] - f[0]
+    f = np.maximum(f, 1.0)
+    tau = T0 * ((1 - chirp) + chirp * np.sqrt(f_t / (f + f_t)))
+    # above the transition frequency springs carry a second, slower wave group
+    tau = tau + T0 * 0.6 * (1 / (1 + np.exp(-(f - fc) / 250.0)))
+    phi = 2 * np.pi * np.cumsum(tau) * df
+    rt = rt_lo + (rt_hi - rt_lo) * (f / (f + 2500.0))
+    R = 10 ** (-3 * (2 * tau) / rt)
+    hp = (f / bp[0]) ** 2 / (1 + (f / bp[0]) ** 2)
+    lp = 1 / (1 + (f / bp[1]) ** 4)
+    B = hp * lp
+    return B * np.exp(-1j * phi) / (1 - R * np.exp(-2j * phi))
+
+
+def make_ir(springs, length_s, seed):
+    rng = np.random.default_rng(seed)
+    N = 1 << int(math.ceil(math.log2(length_s * SR * 2)))
+    f = np.fft.rfftfreq(N, 1 / SR)
+    chans = []
+    for ch in springs:          # ch: list of spring dicts summed into one output
+        H = np.zeros_like(f, dtype=complex)
+        for sp in ch:
+            g = sp.pop("gain", 1.0)
+            H += g * spring_tf(f, **sp)
+        h = np.fft.irfft(H, N)[: int(length_s * SR)]
+        chans.append(h)
+    ir = np.stack(chans, axis=1)
+    fade = int(0.25 * SR)
+    ir[-fade:] *= np.linspace(1, 0, fade)[:, None] ** 2
+    ir /= np.max(np.abs(ir)) * 1.122   # -1 dBFS peak
+    return ir.astype(np.float32)
+
+
+DEFS = {
+    "SYN_K10Spec_2S": dict(
+        desc="Two springs matched to PUBLISHED Fisher K-10 Dynamic Spacexpander specs (delay 33 ms, "
+             "max decay 2 s at 300 Hz; radiomuseum.org / VDRG Handbuch 1967-68). Spec-matched synthetic, "
+             "NOT a capture of K-10 hardware.",
+        length=3.5,
+        springs=[[dict(T0=0.0455, rt_lo=2.13, rt_hi=0.9)], [dict(T0=0.049, rt_lo=2.13, rt_hi=0.9)]]),
+    "SYN_LongTank2S_A": dict(
+        desc="Two long springs, slow chirp, ~3 s. Synthetic stand-in for a classic 2-spring long tank.",
+        length=4.0,
+        springs=[[dict(T0=0.034, rt_lo=3.0, rt_hi=1.2)], [dict(T0=0.039, rt_lo=3.2, rt_hi=1.1)]]),
+    "SYN_ShortTank3S_B": dict(
+        desc="Three short springs per side, dense and bright, ~1.4 s.",
+        length=2.5,
+        springs=[[dict(T0=0.019, rt_lo=1.4, rt_hi=0.8, gain=0.6), dict(T0=0.023, rt_lo=1.5, rt_hi=0.7, gain=0.6), dict(T0=0.027, rt_lo=1.3, rt_hi=0.6, gain=0.6)],
+                 [dict(T0=0.021, rt_lo=1.4, rt_hi=0.8, gain=0.6), dict(T0=0.025, rt_lo=1.5, rt_hi=0.7, gain=0.6), dict(T0=0.029, rt_lo=1.3, rt_hi=0.6, gain=0.6)]]),
+    "SYN_DarkTank2S_C": dict(
+        desc="Two springs, heavy HF damping, strong chirp, dark ~2.5 s.",
+        length=3.5,
+        springs=[[dict(T0=0.031, rt_lo=2.6, rt_hi=0.5, chirp=0.6, bp=(90.0, 3200.0))], [dict(T0=0.036, rt_lo=2.8, rt_hi=0.5, chirp=0.6, bp=(90.0, 3200.0))]]),
+    "SYN_SplashTank1S_D": dict(
+        desc="Single bright spring, mono, strong slow-wave band: splashy and metallic.",
+        length=3.0,
+        springs=[[dict(T0=0.027, rt_lo=2.2, rt_hi=1.6, fc=3000.0, chirp=0.5, bp=(180.0, 6500.0))]]),
+}
+
+
+def main():
+    out_dir = os.path.join(ROOT, "ir", "originals", "synthetic")
+    os.makedirs(out_dir, exist_ok=True)
+    for i, (name, d) in enumerate(DEFS.items()):
+        springs = [[dict(s) for s in ch] for ch in d["springs"]]
+        ir = make_ir(springs, d["length"], seed=i)
+        path = os.path.join(out_dir, name + ".wav")
+        sf.write(path, ir, SR, subtype="FLOAT")
+        meta = {
+            "id": name,
+            "authenticity": "SYNTHETIC - not a hardware capture",
+            "hardware": None,
+            "generator": "tools/synth_ir.py (frequency-domain helical-spring dispersion model)",
+            "generator_params": d["springs"],
+            "description": d["desc"],
+            "sample_rate": SR,
+            "channels": ir.shape[1],
+            "length_s": d["length"],
+            "processing_history": ["generated", "0.25 s quadratic tail fade", "peak-normalised to -1 dBFS"],
+            "license": "CC0 - generated by the Echolivity project",
+            **({"spec_reference": {"unit": "Fisher Dynamic Spacexpander K-10 (1960-1971)",
+                                   "delay_ms": 33, "max_decay_s_at_300hz": 2.0, "gain_db": 0,
+                                   "source": "https://www.radiomuseum.org/r/fisher_the_fisher_k10.html (citing VDRG Handbuch 1967/1968)",
+                                   "interpretation": "33 ms taken as first-arrival delay; to be confirmed against a capture"}}
+               if name.startswith("SYN_K10") else {}),
+            "created": datetime.date.today().isoformat(),
+        }
+        with open(path.replace(".wav", ".json"), "w") as fh:
+            json.dump(meta, fh, indent=2)
+        print("wrote", path, ir.shape)
+
+
+if __name__ == "__main__":
+    main()

@@ -106,7 +106,7 @@
        },
        {
         "box": {
-         "id": "obj-in1",
+         "id": "obj-2",
          "maxclass": "newobj",
          "text": "in 1",
          "numinlets": 0,
@@ -124,7 +124,7 @@
        },
        {
         "box": {
-         "id": "obj-in2",
+         "id": "obj-3",
          "maxclass": "newobj",
          "text": "in 2",
          "numinlets": 0,
@@ -142,7 +142,7 @@
        },
        {
         "box": {
-         "id": "obj-in3",
+         "id": "obj-4",
          "maxclass": "newobj",
          "text": "in 3",
          "numinlets": 0,
@@ -160,7 +160,7 @@
        },
        {
         "box": {
-         "id": "obj-in4",
+         "id": "obj-5",
          "maxclass": "newobj",
          "text": "in 4",
          "numinlets": 0,
@@ -178,7 +178,7 @@
        },
        {
         "box": {
-         "id": "obj-out1",
+         "id": "obj-6",
          "maxclass": "newobj",
          "text": "out 1",
          "numinlets": 1,
@@ -193,7 +193,7 @@
        },
        {
         "box": {
-         "id": "obj-out2",
+         "id": "obj-7",
          "maxclass": "newobj",
          "text": "out 2",
          "numinlets": 1,
@@ -211,7 +211,7 @@
        {
         "patchline": {
          "source": [
-          "obj-in1",
+          "obj-2",
           0
          ],
          "destination": [
@@ -223,7 +223,7 @@
        {
         "patchline": {
          "source": [
-          "obj-in2",
+          "obj-3",
           0
          ],
          "destination": [
@@ -235,7 +235,7 @@
        {
         "patchline": {
          "source": [
-          "obj-in3",
+          "obj-4",
           0
          ],
          "destination": [
@@ -247,7 +247,7 @@
        {
         "patchline": {
          "source": [
-          "obj-in4",
+          "obj-5",
           0
          ],
          "destination": [
@@ -263,7 +263,7 @@
           0
          ],
          "destination": [
-          "obj-out1",
+          "obj-6",
           0
          ]
         }
@@ -275,7 +275,7 @@
           1
          ],
          "destination": [
-          "obj-out2",
+          "obj-7",
           0
          ]
         }
@@ -343,7 +343,7 @@
        },
        {
         "box": {
-         "id": "obj-in1",
+         "id": "obj-2",
          "maxclass": "newobj",
          "text": "in 1",
          "numinlets": 0,
@@ -361,7 +361,7 @@
        },
        {
         "box": {
-         "id": "obj-out1",
+         "id": "obj-3",
          "maxclass": "newobj",
          "text": "out 1",
          "numinlets": 1,
@@ -376,7 +376,7 @@
        },
        {
         "box": {
-         "id": "obj-out2",
+         "id": "obj-4",
          "maxclass": "newobj",
          "text": "out 2",
          "numinlets": 1,
@@ -394,7 +394,7 @@
        {
         "patchline": {
          "source": [
-          "obj-in1",
+          "obj-2",
           0
          ],
          "destination": [
@@ -410,7 +410,7 @@
           0
          ],
          "destination": [
-          "obj-out1",
+          "obj-3",
           0
          ]
         }
@@ -422,7 +422,7 @@
           1
          ],
          "destination": [
-          "obj-out2",
+          "obj-4",
           0
          ]
         }
@@ -494,7 +494,7 @@
        },
        {
         "box": {
-         "id": "obj-in1",
+         "id": "obj-2",
          "maxclass": "newobj",
          "text": "in 1",
          "numinlets": 0,
@@ -512,7 +512,7 @@
        },
        {
         "box": {
-         "id": "obj-in2",
+         "id": "obj-3",
          "maxclass": "newobj",
          "text": "in 2",
          "numinlets": 0,
@@ -530,7 +530,7 @@
        },
        {
         "box": {
-         "id": "obj-in3",
+         "id": "obj-4",
          "maxclass": "newobj",
          "text": "in 3",
          "numinlets": 0,
@@ -548,7 +548,7 @@
        },
        {
         "box": {
-         "id": "obj-in4",
+         "id": "obj-5",
          "maxclass": "newobj",
          "text": "in 4",
          "numinlets": 0,
@@ -566,7 +566,7 @@
        },
        {
         "box": {
-         "id": "obj-in5",
+         "id": "obj-6",
          "maxclass": "newobj",
          "text": "in 5",
          "numinlets": 0,
@@ -584,7 +584,7 @@
        },
        {
         "box": {
-         "id": "obj-out1",
+         "id": "obj-7",
          "maxclass": "newobj",
          "text": "out 1",
          "numinlets": 1,
@@ -599,7 +599,7 @@
        },
        {
         "box": {
-         "id": "obj-out2",
+         "id": "obj-8",
          "maxclass": "newobj",
          "text": "out 2",
          "numinlets": 1,
@@ -614,7 +614,7 @@
        },
        {
         "box": {
-         "id": "obj-out3",
+         "id": "obj-9",
          "maxclass": "newobj",
          "text": "out 3",
          "numinlets": 1,
@@ -629,7 +629,7 @@
        },
        {
         "box": {
-         "id": "obj-out4",
+         "id": "obj-10",
          "maxclass": "newobj",
          "text": "out 4",
          "numinlets": 1,
@@ -647,7 +647,7 @@
        {
         "patchline": {
          "source": [
-          "obj-in1",
+          "obj-2",
           0
          ],
          "destination": [
@@ -659,7 +659,7 @@
        {
         "patchline": {
          "source": [
-          "obj-in2",
+          "obj-3",
           0
          ],
          "destination": [
@@ -671,7 +671,7 @@
        {
         "patchline": {
          "source": [
-          "obj-in3",
+          "obj-4",
           0
          ],
          "destination": [
@@ -683,7 +683,7 @@
        {
         "patchline": {
          "source": [
-          "obj-in4",
+          "obj-5",
           0
          ],
          "destination": [
@@ -695,7 +695,7 @@
        {
         "patchline": {
          "source": [
-          "obj-in5",
+          "obj-6",
           0
          ],
          "destination": [
@@ -711,7 +711,7 @@
           0
          ],
          "destination": [
-          "obj-out1",
+          "obj-7",
           0
          ]
         }
@@ -723,7 +723,7 @@
           1
          ],
          "destination": [
-          "obj-out2",
+          "obj-8",
           0
          ]
         }
@@ -735,7 +735,7 @@
           2
          ],
          "destination": [
-          "obj-out3",
+          "obj-9",
           0
          ]
         }
@@ -747,7 +747,7 @@
           3
          ],
          "destination": [
-          "obj-out4",
+          "obj-10",
           0
          ]
         }
@@ -1218,7 +1218,8 @@
        "parameter_longname": "echstore",
        "parameter_shortname": "echstore",
        "parameter_type": 3,
-       "parameter_invisible": 1
+       "parameter_invisible": 1,
+       "parameter_modmode": 0
       }
      }
     }
@@ -1319,7 +1320,8 @@
         0.25
        ],
        "parameter_initial_enable": 1,
-       "parameter_unitstyle": 1
+       "parameter_unitstyle": 1,
+       "parameter_modmode": 0
       }
      },
      "varname": "Drive",
@@ -1382,7 +1384,8 @@
        "parameter_initial_enable": 1,
        "parameter_unitstyle": 9,
        "parameter_units": "%.2f s",
-       "parameter_exponent": 2.0
+       "parameter_exponent": 2.0,
+       "parameter_modmode": 0
       }
      },
      "varname": "Decay",
@@ -1461,7 +1464,8 @@
         0.0
        ],
        "parameter_initial_enable": 1,
-       "parameter_unitstyle": 1
+       "parameter_unitstyle": 1,
+       "parameter_modmode": 0
       }
      },
      "varname": "Tone",
@@ -1522,7 +1526,8 @@
         0.8
        ],
        "parameter_initial_enable": 1,
-       "parameter_unitstyle": 1
+       "parameter_unitstyle": 1,
+       "parameter_modmode": 0
       }
      },
      "varname": "Damping",
@@ -1601,7 +1606,8 @@
         0.35
        ],
        "parameter_initial_enable": 1,
-       "parameter_unitstyle": 1
+       "parameter_unitstyle": 1,
+       "parameter_modmode": 0
       }
      },
      "varname": "Mix",
@@ -1662,7 +1668,8 @@
         0.0
        ],
        "parameter_initial_enable": 1,
-       "parameter_unitstyle": 4
+       "parameter_unitstyle": 4,
+       "parameter_modmode": 0
       }
      },
      "varname": "Output",
@@ -1748,7 +1755,8 @@
         0.4
        ],
        "parameter_initial_enable": 1,
-       "parameter_unitstyle": 1
+       "parameter_unitstyle": 1,
+       "parameter_modmode": 0
       }
      },
      "varname": "Boing",
@@ -1809,7 +1817,8 @@
         0.44
        ],
        "parameter_initial_enable": 1,
-       "parameter_unitstyle": 1
+       "parameter_unitstyle": 1,
+       "parameter_modmode": 0
       }
      },
      "varname": "Tension",
@@ -1870,7 +1879,8 @@
         0.55
        ],
        "parameter_initial_enable": 1,
-       "parameter_unitstyle": 1
+       "parameter_unitstyle": 1,
+       "parameter_modmode": 0
       }
      },
      "varname": "Dispersion",
@@ -1931,7 +1941,8 @@
         0.35
        ],
        "parameter_initial_enable": 1,
-       "parameter_unitstyle": 1
+       "parameter_unitstyle": 1,
+       "parameter_modmode": 0
       }
      },
      "varname": "Resonance",
@@ -1992,7 +2003,8 @@
         0.3
        ],
        "parameter_initial_enable": 1,
-       "parameter_unitstyle": 1
+       "parameter_unitstyle": 1,
+       "parameter_modmode": 0
       }
      },
      "varname": "Movement",
@@ -2078,7 +2090,8 @@
         0.0
        ],
        "parameter_initial_enable": 1,
-       "parameter_unitstyle": 4
+       "parameter_unitstyle": 4,
+       "parameter_modmode": 0
       }
      },
      "varname": "IR Level",
@@ -2139,7 +2152,8 @@
         0.0
        ],
        "parameter_initial_enable": 1,
-       "parameter_unitstyle": 4
+       "parameter_unitstyle": 4,
+       "parameter_modmode": 0
       }
      },
      "varname": "Model Level",
@@ -2200,7 +2214,8 @@
         0.5
        ],
        "parameter_initial_enable": 1,
-       "parameter_unitstyle": 1
+       "parameter_unitstyle": 1,
+       "parameter_modmode": 0
       }
      },
      "varname": "Hybrid Blend",
@@ -2268,7 +2283,8 @@
        "parameter_initial": [
         2
        ],
-       "parameter_initial_enable": 1
+       "parameter_initial_enable": 1,
+       "parameter_modmode": 0
       }
      }
     }
@@ -2351,7 +2367,8 @@
         0.0
        ],
        "parameter_initial_enable": 1,
-       "parameter_unitstyle": 1
+       "parameter_unitstyle": 1,
+       "parameter_modmode": 0
       }
      },
      "varname": "Feedback",
@@ -2412,7 +2429,8 @@
         0.0
        ],
        "parameter_initial_enable": 1,
-       "parameter_unitstyle": 1
+       "parameter_unitstyle": 1,
+       "parameter_modmode": 0
       }
      },
      "varname": "FB Tone",
@@ -2473,7 +2491,8 @@
         0.2
        ],
        "parameter_initial_enable": 1,
-       "parameter_unitstyle": 1
+       "parameter_unitstyle": 1,
+       "parameter_modmode": 0
       }
      },
      "varname": "FB Drive",
@@ -2534,7 +2553,8 @@
         0.3
        ],
        "parameter_initial_enable": 1,
-       "parameter_unitstyle": 1
+       "parameter_unitstyle": 1,
+       "parameter_modmode": 0
       }
      },
      "varname": "FB Damping",
@@ -2595,7 +2615,8 @@
         0.0
        ],
        "parameter_initial_enable": 1,
-       "parameter_unitstyle": 1
+       "parameter_unitstyle": 1,
+       "parameter_modmode": 0
       }
      },
      "varname": "Self-Osc",
@@ -2682,7 +2703,8 @@
        ],
        "parameter_initial_enable": 1,
        "parameter_unitstyle": 2,
-       "parameter_exponent": 2.0
+       "parameter_exponent": 2.0,
+       "parameter_modmode": 0
       }
      },
      "varname": "Pre-delay",
@@ -2743,7 +2765,8 @@
         1.0
        ],
        "parameter_initial_enable": 1,
-       "parameter_unitstyle": 1
+       "parameter_unitstyle": 1,
+       "parameter_modmode": 0
       }
      },
      "varname": "Width",
@@ -2804,7 +2827,8 @@
         0.15
        ],
        "parameter_initial_enable": 1,
-       "parameter_unitstyle": 1
+       "parameter_unitstyle": 1,
+       "parameter_modmode": 0
       }
      },
      "varname": "Modulation",
@@ -2881,7 +2905,8 @@
        "parameter_initial": [
         0
        ],
-       "parameter_initial_enable": 1
+       "parameter_initial_enable": 1,
+       "parameter_modmode": 0
       }
      }
     }
@@ -5088,6 +5113,258 @@
   "latency": 0,
   "is_mpe": 0,
   "minimum_live_version": "12.0",
-  "minimum_max_version": "8.6"
+  "minimum_max_version": "8.6",
+  "bglocked": 0,
+  "default_fontface": 0,
+  "gridonopen": 1,
+  "gridsnaponopen": 1,
+  "objectsnaponopen": 1,
+  "statusbarvisible": 2,
+  "toolbarvisible": 1,
+  "lefttoolbarpinned": 0,
+  "toptoolbarpinned": 0,
+  "righttoolbarpinned": 0,
+  "bottomtoolbarpinned": 0,
+  "toolbars_unpinned_last_save": 0,
+  "tallnewobj": 0,
+  "boxanimatetime": 200,
+  "enablehscroll": 1,
+  "enablevscroll": 1,
+  "subpatcher_template": "",
+  "style": "",
+  "autosave": 0,
+  "assistshowspatchername": 0,
+  "external_mpe_tuning_enabled": 0,
+  "platform_compatibility": 0,
+  "openrectmode": 0,
+  "devicewidth": 998.0,
+  "project": {
+   "version": 1,
+   "creationdate": 1763424000,
+   "modificationdate": 1763424000,
+   "viewrect": [
+    0.0,
+    0.0,
+    300.0,
+    500.0
+   ],
+   "autoorganize": 1,
+   "hideprojectwindow": 1,
+   "showdependencies": 1,
+   "autolocalize": 0,
+   "contents": {
+    "patchers": {}
+   },
+   "layout": {},
+   "searchpath": {},
+   "detailsvisible": 0,
+   "amxdtype": 1633771873,
+   "readonly": 0,
+   "devpathtype": 0,
+   "devpath": ".",
+   "sortmode": 0,
+   "viewmode": 0,
+   "includepackages": 0
+  },
+  "parameters": {
+   "obj-28": [
+    "echstore",
+    "echstore",
+    0
+   ],
+   "obj-32": [
+    "Drive",
+    "Drive",
+    0
+   ],
+   "obj-34": [
+    "Decay",
+    "Decay",
+    0
+   ],
+   "obj-37": [
+    "Tone",
+    "Tone",
+    0
+   ],
+   "obj-39": [
+    "Damping",
+    "Damping",
+    0
+   ],
+   "obj-42": [
+    "Mix",
+    "Mix",
+    0
+   ],
+   "obj-44": [
+    "Output",
+    "Output",
+    0
+   ],
+   "obj-47": [
+    "Boing",
+    "Boing",
+    0
+   ],
+   "obj-49": [
+    "Tension",
+    "Tension",
+    0
+   ],
+   "obj-51": [
+    "Dispersion",
+    "Dispers.",
+    0
+   ],
+   "obj-53": [
+    "Resonance",
+    "Reson.",
+    0
+   ],
+   "obj-55": [
+    "Movement",
+    "Movement",
+    0
+   ],
+   "obj-58": [
+    "IR Level",
+    "IR",
+    0
+   ],
+   "obj-60": [
+    "Model Level",
+    "Model",
+    0
+   ],
+   "obj-62": [
+    "Hybrid Blend",
+    "Blend",
+    0
+   ],
+   "obj-64": [
+    "Engine Mode",
+    "Engine",
+    0
+   ],
+   "obj-67": [
+    "Feedback",
+    "Feedback",
+    0
+   ],
+   "obj-69": [
+    "FB Tone",
+    "FB Tone",
+    0
+   ],
+   "obj-71": [
+    "FB Drive",
+    "FB Drive",
+    0
+   ],
+   "obj-73": [
+    "FB Damping",
+    "FB Damp",
+    0
+   ],
+   "obj-75": [
+    "Self-Osc",
+    "Self-Osc",
+    0
+   ],
+   "obj-78": [
+    "Pre-delay",
+    "Pre-dly",
+    0
+   ],
+   "obj-80": [
+    "Width",
+    "Width",
+    0
+   ],
+   "obj-82": [
+    "Modulation",
+    "Mod",
+    0
+   ],
+   "obj-84": [
+    "IR",
+    "IR",
+    0
+   ],
+   "parameterbanks": {
+    "0": {
+     "index": 0,
+     "name": "Core",
+     "parameters": [
+      "Drive",
+      "Decay",
+      "Tone",
+      "Damping",
+      "Mix",
+      "Output",
+      "-",
+      "-"
+     ]
+    },
+    "1": {
+     "index": 1,
+     "name": "Spring",
+     "parameters": [
+      "Boing",
+      "Tension",
+      "Dispersion",
+      "Resonance",
+      "Movement",
+      "-",
+      "-",
+      "-"
+     ]
+    },
+    "2": {
+     "index": 2,
+     "name": "Hybrid",
+     "parameters": [
+      "Engine Mode",
+      "IR",
+      "IR Level",
+      "Model Level",
+      "Hybrid Blend",
+      "-",
+      "-",
+      "-"
+     ]
+    },
+    "3": {
+     "index": 3,
+     "name": "Dub",
+     "parameters": [
+      "Feedback",
+      "FB Tone",
+      "FB Drive",
+      "FB Damping",
+      "Self-Osc",
+      "-",
+      "-",
+      "-"
+     ]
+    },
+    "4": {
+     "index": 4,
+     "name": "Advanced",
+     "parameters": [
+      "Pre-delay",
+      "Width",
+      "Modulation",
+      "-",
+      "-",
+      "-",
+      "-",
+      "-"
+     ]
+    }
+   },
+   "inherited_shortname": 1
+  }
  }
 }

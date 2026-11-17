@@ -4,6 +4,7 @@
 - The device was built and checked **outside Max**. Its GenExpr was run through a translator, and its js under Node.
 - These are unproven: gen~ compiling, the hand-built `.amxd` header loading in Live, the UI, real CPU use, the `---` per-instance buffer names, and the pattrstorage recall of the User IR path.
 - The fallback if the `.amxd` won't load is to open the `.maxpat` (see the README).
+- **Load-crash risk (mitigated, unverified):** a hand-built patch with the same structure crashed Live 12.4.15 / Max 9.1.5 inside the gen~ compiler (Twin Phasor 76, Nov 2026). On 18 Nov the build was changed to match Max's own conventions: `obj-N` ids inside the gen~ objects, a root parameter table with Push banks, and the root keys and `project` block Max writes. That fixed Twin Phasor; it hasn't been tested on this device yet. `tools/make_bisect.py` builds a 4-step diagnostic ladder.
 
 ## DSP
 - **Convolution latency:** 21–23 ms on the IR path, not reported to Live. It acts as pre-delay. The dry path has no added latency.

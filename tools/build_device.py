@@ -46,12 +46,12 @@ def gen_patcher(code, n_in, n_out):
                             "numoutlets": n_out, "outlettype": [""] * n_out,
                             "patching_rect": [20, 60, 700, 600]}})
     for k in range(n_in):
-        i = f"obj-in{k + 1}"
+        i = f"obj-{k + 2}"
         g_boxes.append({"box": {"id": i, "maxclass": "newobj", "text": f"in {k + 1}", "numinlets": 0,
                                 "numoutlets": 1, "outlettype": [""], "patching_rect": [20 + 80 * k, 20, 40, 22]}})
         g_lines.append({"patchline": {"source": [i, 0], "destination": [cid, k]}})
     for k in range(n_out):
-        o = f"obj-out{k + 1}"
+        o = f"obj-{n_in + k + 2}"
         g_boxes.append({"box": {"id": o, "maxclass": "newobj", "text": f"out {k + 1}", "numinlets": 1,
                                 "numoutlets": 0, "patching_rect": [20 + 80 * k, 680, 45, 22]}})
         g_lines.append({"patchline": {"source": [cid, k], "destination": [o, 0]}})
@@ -277,8 +277,70 @@ def build():
     return pat, lib
 
 
+# Root patcher keys Max writes when it saves a device (taken from a device that loads in
+# Live 12.4.15 / Max 9.1.5: Twin Phasor 76 S2+). Added 2026-11-18 after Twin Phasor's
+# hand-built S1 patch crashed Live inside the gen~ compiler on load.
+MAX_ROOT_DEFAULTS = {
+    "bglocked": 0, "default_fontface": 0, "gridonopen": 1, "gridsnaponopen": 1, "objectsnaponopen": 1,
+    "statusbarvisible": 2, "toolbarvisible": 1, "lefttoolbarpinned": 0, "toptoolbarpinned": 0,
+    "righttoolbarpinned": 0, "bottomtoolbarpinned": 0, "toolbars_unpinned_last_save": 0, "tallnewobj": 0,
+    "boxanimatetime": 200, "enablehscroll": 1, "enablevscroll": 1, "subpatcher_template": "", "style": "",
+    "autosave": 0, "assistshowspatchername": 0, "external_mpe_tuning_enabled": 0, "platform_compatibility": 0,
+    "openrectmode": 0,
+}
+BANK_ORDER = [  # Push banks, by panel section
+    ("Core", ["Drive", "Decay", "Tone", "Damping", "Mix", "Output"]),
+    ("Spring", ["Boing", "Tension", "Dispersion", "Resonance", "Movement"]),
+    ("Hybrid", ["Engine Mode", "IR", "IR Level", "Model Level", "Hybrid Blend"]),
+    ("Dub", ["Feedback", "FB Tone", "FB Drive", "FB Damping", "Self-Osc"]),
+    ("Advanced", ["Pre-delay", "Width", "Modulation"]),
+]
+EPOCH = int(os.environ.get("SOURCE_DATE_EPOCH", "1763424000"))  # fixed: reproducible builds
+
+
+def finalize(pat):
+    """Bring the hand-built patch in line with what Max itself saves (see MAX_ROOT_DEFAULTS)."""
+    P = pat["patcher"]
+    for k, v in MAX_ROOT_DEFAULTS.items():
+        P.setdefault(k, v)
+    width = max((b["box"]["presentation_rect"][0] + b["box"]["presentation_rect"][2]
+                 for b in P["boxes"] if b["box"].get("presentation")), default=0)
+    P.setdefault("devicewidth", float(round(width + 8)))
+    P["project"] = {"version": 1, "creationdate": EPOCH, "modificationdate": EPOCH,
+                    "viewrect": [0.0, 0.0, 300.0, 500.0], "autoorganize": 1, "hideprojectwindow": 1,
+                    "showdependencies": 1, "autolocalize": 0, "contents": {"patchers": {}}, "layout": {},
+                    "searchpath": {}, "detailsvisible": 0, "amxdtype": 1633771873, "readonly": 0,
+                    "devpathtype": 0, "devpath": ".", "sortmode": 0, "viewmode": 0, "includepackages": 0}
+    params, visible = {}, []
+    for b in P["boxes"]:
+        bx = b["box"]
+        v = bx.get("saved_attribute_attributes", {}).get("valueof")
+        if not v:
+            continue
+        v.setdefault("parameter_modmode", 0)
+        if v.get("parameter_type") == 2:
+            v["parameter_mmax"] = len(v["parameter_enum"]) - 1
+        params[bx["id"]] = [v["parameter_longname"], v["parameter_shortname"], 0]
+        if not v.get("parameter_invisible"):
+            visible.append(v["parameter_longname"])
+    banks, used = {}, set()
+    for name, members in BANK_ORDER:
+        chunk = [m for m in members if m in visible]
+        used |= set(chunk)
+        if chunk:
+            banks[str(len(banks))] = {"index": len(banks), "name": name, "parameters": chunk + ["-"] * (8 - len(chunk))}
+    rest = [m for m in visible if m not in used]
+    for i in range(0, len(rest), 8):
+        banks[str(len(banks))] = {"index": len(banks), "name": "More", "parameters": rest[i:i + 8] + ["-"] * (8 - len(rest[i:i + 8]))}
+    params["parameterbanks"] = banks
+    params["inherited_shortname"] = 1
+    P["parameters"] = params
+    return pat
+
+
 def main():
     pat, lib = build()
+    finalize(pat)
     js = open(os.path.join(DEV, "code", "ech_ui.js")).read().replace("__LIB__", json.dumps(lib))
     open(os.path.join(DEV, "ech_ui.js"), "w").write(js)
     open(os.path.join(DEV, "ech_ir_loader.js"), "w").write(open(os.path.join(DEV, "code", "ech_ir_loader.js")).read())

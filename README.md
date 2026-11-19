@@ -191,3 +191,7 @@ Design rule: change DSP in `reference/engine.py` first, port it to `device/gen/*
 **ECHOLIVITY TOOLS** · Sound first. Engineering second. Hype last.
 
 </div>
+
+## License
+
+MIT, see [LICENSE](LICENSE). This covers the code, the device and the synthetic IRs. Third-party IRs and reference documents are not in this repository and are not covered (see `ir/originals/third_party/README.md`).

@@ -121,11 +121,13 @@ def build():
                if not p.endswith("index.json")]
 
     # ---- audio graph -------------------------------------------------------------
-    pin = box("plugin~ 2", (40, 40, 80, 22), ins=2, outs=2, outlettype=["signal", "signal"])
+    # No arguments: plugin~ defaults to input channels 1 and 2. (A number argument selects ONE
+    # channel: "plugin~ 2" is right-input-only, which silenced the device in Live, 19 Nov.)
+    pin = box("plugin~", (40, 40, 80, 22), ins=2, outs=2, outlettype=["signal", "signal"])
     front = gen_box("ech_front", 4, 2, (40, 160, 160, 22))
     conv = gen_box("ech_conv", 1, 2, (40, 240, 120, 22))
     back = gen_box("ech_back", 5, 4, (40, 320, 260, 22))
-    pout = box("plugout~ 2", (40, 420, 80, 22), ins=2, outs=0, outlettype=[])
+    pout = box("plugout~", (40, 420, 80, 22), ins=2, outs=0, outlettype=[])
     tin_fb = box("tapin~ 100", (340, 380, 70, 22), ins=1, outs=1, outlettype=["tapconnect"])
     tout_fb = box("tapout~ 0", (340, 410, 70, 22), ins=1, outs=1, outlettype=["signal"])
     tin_sp = box("tapin~ 100", (440, 380, 70, 22), ins=1, outs=1, outlettype=["tapconnect"])
@@ -143,7 +145,7 @@ def build():
     hbuf = box("buffer~ ---echH 1 2", (600, 300, 120, 22), ins=1, outs=2, outlettype=["float", "bang"])
     loader = box("js ech_ir_loader.js ---echIR ---echH", (600, 240, 220, 22), ins=1, outs=2)
     ui = box("js ech_ui.js", (600, 100, 80, 22), ins=1, outs=4)
-    info = box("info~ ---echIR", (760, 190, 90, 22), ins=1, outs=9)
+    info = box("info~ ---echIR", (760, 190, 90, 22), ins=1, outs=10)
     tbb = box("t b b", (600, 190, 40, 22), ins=1, outs=2)
     msg_load = box("load", (600, 215, 40, 22), maxclass="message", ins=2, outs=1)
     pre_irsr = box("prepend irsr", (760, 215, 80, 22))
@@ -164,7 +166,8 @@ def build():
     pre_user = box("prepend user", (1000, 250, 80, 22))
     line(ui, 0, irbuf, 0)
     line(irbuf, 1, tbb, 0); line(tbb, 1, info, 0); line(tbb, 0, msg_load, 0)
-    line(info, 6, pre_irsr, 0); line(pre_irsr, 0, loader, 0); line(msg_load, 0, loader, 0)
+    line(info, 0, pre_irsr, 0)  # info~ left outlet = file sample rate
+    line(pre_irsr, 0, loader, 0); line(msg_load, 0, loader, 0)
     line(loader, 0, route_l, 0)
     line(route_l, 0, pre_bs, 0); line(route_l, 1, pre_np, 0)
     line(route_l, 2, pre_pk, 0); line(route_l, 3, pre_hi, 0)

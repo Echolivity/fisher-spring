@@ -50,17 +50,14 @@ opc(fc) {
 	return 1 - exp(-twopi * fc / samplerate);
 }
 
-rnd() {
-	return (noise() + 1) * 0.5;
-}
 
 modelpeak(dec, ten, disp) {
 	kk = max(1, floor(samplerate / 22050 + 0.5));
 	aa = -(0.45 + 0.35 * disp);
 	lp = 0.08 - 0.05 * ten;
 	apd = 64 * kk * (1 - aa) / (1 + aa);
-	tau = kk * (1 - aa * aa) / (1 + 2 * aa * cos(kk * twopi * 400 / samplerate) + aa * aa);
-	le = (max(lp * samplerate - apd, 8) + 64 * tau) / samplerate;
+	tdl = kk * (1 - aa * aa) / (1 + 2 * aa * cos(kk * twopi * 400 / samplerate) + aa * aa);
+	le = (max(lp * samplerate - apd, 8) + 64 * tdl) / samplerate;
 	gg = pow(10, -3 * le / (1.15 * dec));
 	return 0.3 * sqrt(1 - gg * gg) * 5.5 / (1 - gg);
 }
@@ -89,8 +86,8 @@ ratio = 37 / 29;
 ap_dc = 64 * K * (1 - a0) / (1 + a0);
 // effective loop time at 400 Hz (the cascade delays lows far more than mids)
 cw = cos(K * twopi * 400 / samplerate);
-tau_1k = K * (1 - a0 * a0) / (1 + 2 * a0 * cw + a0 * a0);
-loop_eff = (max(loop_s * samplerate - ap_dc, 8) + 64 * tau_1k) / samplerate;
+tdl_lo = K * (1 - a0 * a0) / (1 + 2 * a0 * cw + a0 * a0);
+loop_eff = (max(loop_s * samplerate - ap_dc, 8) + 64 * tdl_lo) / samplerate;
 g_t = pow(10, -3 * loop_eff / (1.15 * dec));
 fr = 900 + 2100 * tension;
 gdb = 60 * loop_eff * 2 * resonance / dec;
@@ -126,8 +123,8 @@ st.poke(fixdenorm(envf), 5);
 st.poke(fixdenorm(envs), 6);
 tr = max(envf - 1.5 * envs, 0);
 hit = min(tr * 8, 1);
-if (rnd() < movement * 0.4 / samplerate) {
-	hit = max(hit, 0.3 + 0.4 * rnd());
+if ((noise() + 1) * 0.5 < movement * 0.4 / samplerate) {
+	hit = max(hit, 0.3 + 0.2 * (noise() + 1));
 }
 slap = max(st.peek(9) * exp(-1 / (0.12 * samplerate)), hit);
 st.poke(fixdenorm(slap), 9);

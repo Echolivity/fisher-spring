@@ -81,3 +81,51 @@ def test_gen_functions_come_first():
                            and not l.startswith(("\t", "}"))), 0)
         later_funcs = [l for l in lines[first_stmt:] if re.match(r"^\w+\s*\([\w\s,]*\)\s*\{$", l)]
         assert not later_funcs, f"{f}: function defined after a statement: {later_funcs}"
+
+
+def test_dials_reach_dsp_in_dsp_units():
+    """Percent dials run x100 and must pass a [* 0.01] before their 'prepend <param>'."""
+    import sys
+    sys.path.insert(0, ROOT)
+    from reference.params import PARAMS
+    gen = {"mix": "drywet"}
+    for b in BOXES.values():
+        v = b.get("saved_attribute_attributes", {}).get("valueof", {})
+        if b["maxclass"] != "live.dial":
+            continue
+        key = next(k for k in PARAMS if v["parameter_longname"] in (k,) or b["varname"] == {
+            "drive": "Drive", "decay": "Decay", "tone": "Tone", "damping": "Damping", "mix": "Mix", "output": "Output",
+            "boing": "Boing", "tension": "Tension", "dispersion": "Dispersion", "resonance": "Resonance",
+            "movement": "Movement", "ir_level": "IR Level", "model_level": "Model Level", "blend": "Hybrid Blend",
+            "feedback": "Feedback", "fb_tone": "FB Tone", "fb_drive": "FB Drive", "fb_damping": "FB Damping",
+            "self_osc": "Self-Osc", "predelay": "Pre-delay", "width": "Width", "modulation": "Modulation"}.get(k))
+        factor = 1.0
+        targets = [BOXES[l["destination"][0]] for l in outgoing(b["id"])]
+        if len(targets) == 1 and targets[0].get("text") == "* 0.01":
+            factor = 0.01
+            targets = [BOXES[l["destination"][0]] for l in outgoing(targets[0]["id"])]
+        texts = [t.get("text") for t in targets]
+        assert f"prepend {gen.get(key, key)}" in texts, (key, texts)
+        lo, hi = PARAMS[key][:2]
+        assert abs(v["parameter_mmin"] * factor - lo) < 1e-9 and abs(v["parameter_mmax"] * factor - hi) < 1e-9, key
+
+
+def test_panel_layout_fits_and_does_not_overlap():
+    W = P["devicewidth"]
+    items = [b for b in BOXES.values() if b.get("presentation") and b["maxclass"] != "panel"]
+    for b in items:
+        x, y, w, h = b["presentation_rect"]
+        assert x >= 0 and y >= 0 and x + w <= W and y + h <= 169, (b.get("varname") or b.get("text"), b["presentation_rect"])
+    for i, a in enumerate(items):
+        for c in items[i + 1:]:
+            ax, ay, aw, ah = a["presentation_rect"]; cx, cy, cw, ch = c["presentation_rect"]
+            overlap = ax < cx + cw and cx < ax + aw and ay < cy + ch and cy < ay + ah
+            assert not overlap, (a.get("varname") or a.get("text"), c.get("varname") or c.get("text"))
+
+
+def test_preset_menu_entries_match_selector():
+    um = [b for b in BOXES.values() if b["maxclass"] == "umenu"][0]
+    n_entries = um["items"].count(",") + 1
+    sel = [b for b in BOXES.values() if b.get("text", "").startswith("sel ")][0]
+    picks = [int(t) for t in sel["text"].split()[1:]]
+    assert picks == list(range(1, n_entries)), (n_entries, picks)   # entry 0 is the header

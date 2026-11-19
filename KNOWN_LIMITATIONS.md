@@ -10,6 +10,7 @@
   - "variable m is not defined": variables first created inside loops in the convolution code. Every such variable is now declared at the top level.
   - "can't find file ech_ir_loader.js / ech_ui.js": both scripts are now embedded in the device (`v8.codebox`, needs Max 9). The buffer names reach them as a load-time message.
   - `tests/test_patch.py` checks all three.
+- **Panel (19 Nov redesign):** colours are fixed to the Echolivity palette, so the panel won't follow Live's theme. Percent controls run 0–100 on the dial and are scaled to 0–1 before the DSP. `docs/img/panel_preview.png` is an approximate render made without Live (`tools/preview_panel.py`); a few colour attributes may be named differently in Max and fall back to defaults.
 - Each of these was invisible outside Max. More gen~ compile errors may surface once these are cleared; the Max console will name them.
 - **Load-crash risk (mitigated, unverified):** a hand-built patch with the same structure crashed Live 12.4.15 / Max 9.1.5 inside the gen~ compiler (Twin Phasor 76, Nov 2026). On 18 Nov the build was changed to match Max's own conventions: `obj-N` ids inside the gen~ objects, a root parameter table with Push banks, and the root keys and `project` block Max writes. That fixed Twin Phasor; it hasn't been tested on this device yet. `tools/make_bisect.py` builds a 4-step diagnostic ladder.
 

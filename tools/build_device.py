@@ -73,12 +73,29 @@ LABEL = {"drive": "Drive", "decay": "Decay", "tone": "Tone", "damping": "Damping
          "fb_tone": "FB Tone", "fb_drive": "FB Drive", "fb_damping": "FB Damping",
          "self_osc": "Self-Osc", "predelay": "Pre-delay", "width": "Width", "modulation": "Modulation"}
 SHORT = {"model_level": "Model", "ir_level": "IR", "blend": "Blend", "self_osc": "Self-Osc",
-         "fb_damping": "FB Damp", "dispersion": "Dispers.", "resonance": "Reson.", "modulation": "Mod",
-         "movement": "Movement", "predelay": "Pre-dly"}
+         "fb_damping": "FB Damp", "dispersion": "Disperse", "resonance": "Reso", "modulation": "Mod",
+         "movement": "Motion", "predelay": "Pre-Dly"}
 FRONT = {"drive", "predelay", "engine_mode"}
 BACK = set(PARAMS) - {"predelay"}
 GEN_NAME = {"mix": "drywet"}
 LOADER = {"decay", "damping"}
+
+
+# ---- look ---------------------------------------------------------------------------
+# Palette from assets/fisher-spring-banner.svg / signal-flow.svg (walnut, brass, valve orange)
+def rgba(h, a=1.0):
+    h = h.lstrip("#")
+    return [round(int(h[i:i + 2], 16) / 255, 4) for i in (0, 2, 4)] + [a]
+
+
+C = {"bg": "#16130f", "panel": "#211a14", "border": "#5a4630", "brass": "#d4ae5f", "brass_hi": "#e9c97f",
+     "orange": "#d9774a", "text": "#d9c7ae", "muted": "#9d8b76", "track": "#3a2f25", "cream": "#f3ead9",
+     "field": "#100d0a"}
+DUB_ACCENT = {"feedback", "self_osc", "fb_drive", "fb_tone", "fb_damping"}
+
+# Unitless 0..1 / -1..1 / 0..2 controls are shown in percent: the dial runs x100 and a
+# [* 0.01] box scales it back before gen~, so the DSP ranges are unchanged.
+PCT = {k for k, v in PARAMS.items() if v[3] == "" and k != "engine_mode"}
 
 
 def unit(k):
@@ -89,28 +106,71 @@ def unit(k):
         return {"parameter_unitstyle": 2}
     if u == "s":
         return {"parameter_unitstyle": 9, "parameter_units": "%.2f s"}
-    if PARAMS[k][0] < 0:
-        return {"parameter_unitstyle": 1}
-    return {"parameter_unitstyle": 9, "parameter_units": "%.0f %%", "parameter_exponent": 1.0} if False else {"parameter_unitstyle": 1}
+    return {"parameter_unitstyle": 5}                       # percent
+
+
+def dial_range(k):
+    lo, hi, dflt = PARAMS[k][:3]
+    f = 100.0 if k in PCT else 1.0
+    return lo * f, hi * f, dflt * f
 
 
 def dial(k, prect):
-    lo, hi, dflt, *_ = PARAMS[k]
+    lo, hi, dflt = dial_range(k)
     va = {"parameter_longname": LABEL[k], "parameter_shortname": SHORT.get(k, LABEL[k]),
           "parameter_type": 0, "parameter_mmin": lo, "parameter_mmax": hi,
           "parameter_initial": [dflt], "parameter_initial_enable": 1, **unit(k)}
     if k in ("decay", "predelay"):
         va["parameter_exponent"] = 2.0
+    acc = C["orange"] if k in DUB_ACCENT else C["brass"]
     return box(None, (40 + 60 * len(boxes) % 1200, 900, 44, 48), maxclass="live.dial", ins=1, outs=2,
                outlettype=["", "float"], parameter_enable=1, presentation=1,
                presentation_rect=list(prect), saved_attribute_attributes={"valueof": va},
-               varname=LABEL[k], showname=1, shownumber=1)
+               varname=LABEL[k], showname=1, shownumber=1, fontsize=9.0,
+               activedialcolor=rgba(acc), dialcolor=rgba(C["track"]), activeneedlecolor=rgba(C["cream"]),
+               needlecolor=rgba(C["muted"]), textcolor=rgba(C["text"]), focusbordercolor=rgba(acc))
 
 
-def comment(text, prect, size=10, bold=False):
+def comment(text, prect, size=10, bold=False, color="text"):
     return box(text, (1300, 20 + 22 * len(boxes) % 600, 150, 18), maxclass="comment", ins=1, outs=0,
                outlettype=[], presentation=1, presentation_rect=list(prect), fontsize=size,
+               fontname="Arial Bold" if bold else "Arial", textcolor=rgba(C[color]),
                **({"fontface": 1} if bold else {}))
+
+
+def panel(prect, fill="panel", border="border", rounded=6):
+    return box(None, (1500, 20 + 4 * len(boxes) % 600, 60, 40), maxclass="panel", ins=1, outs=0,
+               outlettype=[], presentation=1, presentation_rect=list(prect), background=1, ignoreclick=1,
+               bgcolor=rgba(C[fill]), bgfillcolor_type="color", bgfillcolor_color=rgba(C[fill]),
+               border=1 if border else 0, bordercolor=rgba(C[border or fill]), rounded=rounded)
+
+
+def menu_style(acc="brass"):
+    return dict(bgcolor=rgba(C["field"]), activebgcolor=rgba(C["field"]), textcolor=rgba(C["text"]),
+                tricolor=rgba(C[acc]), bordercolor=rgba(C["border"]), focusbordercolor=rgba(C[acc]),
+                fontsize=9.0)
+
+
+IR_NAMES = {  # menu labels; the device still loads files by catalogue id (ech_ui.js LIB)
+    "TP_FISHER_K10_derickgtwk_STEREO_96k": "Fisher K-10",
+    "TP_BF_FenderDeluxe_MONO_44k": "Fender Deluxe", "TP_BF_Supro_MONO_44k": "Supro",
+    "TP_BF_BirdVerb_FenderDeluxe_ST_44k": "Bird-Verb Deluxe", "TP_BF_BirdVerb_Supro_ST_44k": "Bird-Verb Supro",
+    "TP_MT_70sStereoSpring_01": "70s Stereo Spring", "TP_MT_Spring_Webcor": "Spring + Webcor",
+    "TP_MT_SilverFace_Spring_01": "Silver Face Spring",
+    "SYN_LongTank2S_A": "Synthetic Long Tank", "SYN_ShortTank3S_B": "Synthetic Short Tank",
+    "SYN_DarkTank2S_C": "Synthetic Dark Tank", "SYN_SplashTank1S_D": "Synthetic Splash",
+    "SYN_K10Spec_2S": "Synthetic K-10 Spec",
+}
+
+
+def umenu_items(entries):
+    """Max saves umenu items as one flat atom list with "," atoms between entries."""
+    out = []
+    for i, e in enumerate(entries):
+        if i:
+            out.append(",")
+        out += e.split()
+    return out
 
 
 def build():
@@ -151,7 +211,8 @@ def build():
         'var irName = jsarguments[1] || "echIR";\nvar hName = jsarguments[2] || "echH";',
         'var irName = "echIR";\nvar hName = "echH";\nfunction names(a, b) { irName = String(a); hName = String(b); }')
     assert "jsarguments" not in loader_code
-    ui_code = open(os.path.join(DEV, "code", "ech_ui.js")).read().replace("__LIB__", json.dumps(lib))
+    ui_code = (open(os.path.join(DEV, "code", "ech_ui.js")).read().replace("__LIB__", json.dumps(lib))
+               .replace("__NAMES__", json.dumps([IR_NAMES.get(i, i) for i in lib])))
     loader = box(None, (600, 240, 260, 120), maxclass="v8.codebox", ins=1, outs=2, code=loader_code,
                  varname="ech_ir_loader")
     ui = box(None, (600, 100, 260, 120), maxclass="v8.codebox", ins=1, outs=4, code=ui_code, varname="ech_ui")
@@ -193,90 +254,114 @@ def build():
     line(ui, 3, store, 0); line(store, 0, pre_restore, 0); line(pre_restore, 0, ui, 0)
 
     # ---- UI ---------------------------------------------------------------------------
-    W, H = 52, 46
-    secs = [("CORE", ["drive", "decay", "tone", "damping", "mix", "output"], 3),
-            ("SPRING", ["boing", "tension", "dispersion", "resonance", "movement"], 3),
-            ("HYBRID", ["ir_level", "model_level", "blend"], 2),
-            ("DUB", ["feedback", "fb_tone", "fb_drive", "fb_damping", "self_osc"], 3),
-            ("ADVANCED", ["predelay", "width", "modulation"], 3)]
-    x0 = 8
+    # Five framed sections in one row, footer with brand / status / presets. 169 px tall.
+    SX, SW, SY, SH, GAP = 6, 158, 4, 142, 6
+    COLS = [7, 57, 107]                      # dial x offsets inside a section
+    ROW = [22, 84]                           # dial rows (live.dial: name above, value below)
+    DW = SX + 5 * SW + 4 * GAP + 6
+    panel([0, 0, DW, 169], fill="bg", border=None, rounded=0)
+    secs = [("CORE", ["drive", "decay", "tone", "damping", "mix", "output"]),
+            ("SPRING", ["boing", "tension", "dispersion", "resonance", "movement"]),
+            ("HYBRID", ["ir_level", "model_level", "blend"]),
+            ("DUB", ["feedback", "fb_tone", "fb_drive", "fb_damping", "self_osc"]),
+            ("ADVANCED", ["predelay", "width", "modulation"])]
     dial_ids = {}
-    for title, keys, cols in secs:
-        comment(title, (x0, 2, 120, 16), size=10, bold=True)
-        top = 18
-        if title == "HYBRID":
-            top = 40
-        if title == "ADVANCED":
-            top = 62
-        for j, k in enumerate(keys):
-            r, c = divmod(j, cols)
-            d = dial(k, (x0 + c * W, top + r * (H + 4), 44, H))
+
+    def wire(k, d):
+        gname = GEN_NAME.get(k, k)
+        src = d
+        if k in PCT:
+            src = box("* 0.01", (40 + 110 * len(dial_ids), 930, 50, 22), ins=2, outs=1)
+            line(d, 0, src, 0)
+        pre = box(f"prepend {gname}", (40 + 110 * len(dial_ids), 960, 100, 22))
+        line(src, 0, pre, 0)
+        if k in FRONT:
+            line(pre, 0, front, 0)
+        if k in BACK:
+            line(pre, 0, back, 0)
+        if k in LOADER:
+            pre2 = box(f"prepend {k}", (40 + 110 * len(dial_ids), 990, 100, 22))
+            line(src, 0, pre2, 0); line(pre2, 0, loader, 0)
+
+    for n, (title, keys) in enumerate(secs):
+        x = SX + n * (SW + GAP)
+        panel([x, SY, SW, SH])
+        comment(title, (x + 6, SY + 2, SW - 12, 16), size=9, bold=True,
+                color="orange" if title == "DUB" else "brass")
+        if title in ("HYBRID", "ADVANCED"):
+            slots = [(ROW[1], c) for c in COLS]          # dials on the lower row; menus above
+        else:
+            slots = [(r, c) for r in ROW for c in COLS]
+        for k, (ry, cx) in zip(keys, slots):
+            d = dial(k, (x + cx, SY + ry, 44, 48))
             dial_ids[k] = d
-            gname = GEN_NAME.get(k, k)
-            pre = box(f"prepend {gname}", (40 + 110 * len(dial_ids), 960, 100, 22))
-            line(d, 0, pre, 0)
-            if k in FRONT:
-                line(pre, 0, front, 0)
-            if k in BACK:
-                line(pre, 0, back, 0)
-            if k in LOADER:
-                pre2 = box(f"prepend {k}", (40 + 110 * len(dial_ids), 990, 100, 22))
-                line(d, 0, pre2, 0); line(pre2, 0, loader, 0)
-        width = cols * W
+            wire(k, d)
         if title == "HYBRID":
+            comment("ENGINE", (x + 7, SY + 22, 80, 14), size=8, color="muted")
             mode = box(None, (300, 900, 100, 18), maxclass="live.menu", ins=1, outs=3,
                        outlettype=["", "", "float"], parameter_enable=1, presentation=1,
-                       presentation_rect=[x0, 18, 2 * W + 40, 18], varname="Engine Mode",
+                       presentation_rect=[x + 7, SY + 37, SW - 14, 18], varname="Engine Mode",
                        saved_attribute_attributes={"valueof": {
                            "parameter_longname": "Engine Mode", "parameter_shortname": "Engine",
                            "parameter_type": 2, "parameter_enum": ENGINE_MODES,
                            "parameter_mmax": len(ENGINE_MODES) - 1,
-                           "parameter_initial": [PARAMS["engine_mode"][2]], "parameter_initial_enable": 1}})
+                           "parameter_initial": [PARAMS["engine_mode"][2]], "parameter_initial_enable": 1}},
+                       **menu_style())
             dial_ids["engine_mode"] = mode
             pre = box("prepend engine_mode", (300, 930, 120, 22))
             line(mode, 0, pre, 0); line(pre, 0, front, 0); line(pre, 0, back, 0)
-            width = 2 * W + 44
         if title == "ADVANCED":
+            comment("IMPULSE RESPONSE", (x + 7, SY + 18, SW - 14, 14), size=8, color="muted")
             irmenu = box(None, (500, 900, 140, 18), maxclass="live.menu", ins=1, outs=3,
                          outlettype=["", "", "float"], parameter_enable=1, presentation=1,
-                         presentation_rect=[x0, 18, 3 * W + 60, 18], varname="IR",
+                         presentation_rect=[x + 7, SY + 32, SW - 14, 18], varname="IR",
                          saved_attribute_attributes={"valueof": {
                              "parameter_longname": "IR", "parameter_shortname": "IR", "parameter_type": 2,
-                             "parameter_enum": lib + ["User IR"], "parameter_mmax": len(lib),
-                             "parameter_initial": [0], "parameter_initial_enable": 1}})
+                             "parameter_enum": [IR_NAMES.get(i, i) for i in lib] + ["User IR"], "parameter_mmax": len(lib),
+                             "parameter_initial": [0], "parameter_initial_enable": 1}},
+                         **menu_style())
             dial_ids["ir"] = irmenu
             pre_lib = box("prepend lib", (500, 930, 80, 22))
             line(irmenu, 0, pre_lib, 0); line(pre_lib, 0, ui, 0)
             line(ui, 1, irmenu, 0)
             drop = box(None, (650, 900, 140, 20), maxclass="live.drop", ins=1, outs=2,
-                       outlettype=["", ""], presentation=1, presentation_rect=[x0, 38, 3 * W + 60, 20],
-                       parameter_enable=0)
+                       outlettype=["", ""], presentation=1, presentation_rect=[x + 7, SY + 54, SW - 14, 22],
+                       parameter_enable=0, legend="Drop your own IR (WAV)", fontsize=8.0,
+                       bgcolor=rgba(C["field"]), bordercolor=rgba(C["border"]), textcolor=rgba(C["muted"]),
+                       focusbordercolor=rgba(C["brass"]))
             line(drop, 0, pre_user, 0); line(pre_user, 0, ui, 0)
-            width = 3 * W + 64
-        x0 += width + 14
 
-    # status line + preset menu
-    status = box("no IR loaded", (600, 380, 300, 18), maxclass="message", ins=2, outs=1, presentation=1,
-                 presentation_rect=[8, 150, 420, 16], fontsize=9)
+    # footer: brand, IR status, presets
+    FY = 151
+    comment("FISHER SPRING", (8, FY, 104, 16), size=11, bold=True, color="brass_hi")
+    comment("ECHOLIVITY", (116, FY + 2, 66, 14), size=8, color="muted")
+    status = box("no IR loaded", (600, 380, 300, 18), maxclass="comment", ins=1, outs=0, outlettype=[],
+                 presentation=1, presentation_rect=[190, FY + 2, 400, 14], fontsize=8.0, fontname="Arial",
+                 textcolor=rgba(C["muted"]))
     line(loader, 1, status, 0); line(ui, 2, status, 0)
-    comment("PRESET", (440, 150, 50, 16), size=9, bold=True)
+    comment("PRESET", (DW - 236, FY + 2, 44, 14), size=8, bold=True, color="muted")
     pmenu = box(None, (40, 1100, 200, 20), maxclass="umenu", ins=1, outs=3, outlettype=["int", "", ""],
-                presentation=1, presentation_rect=[490, 148, 220, 18],
-                items=[f"{p['number']:02d} {p['name']}" for p in presets])
-    sel = box("sel " + " ".join(str(i) for i in range(len(presets))), (40, 1130, 300, 22),
-              ins=2, outs=len(presets) + 1)
+                presentation=1, presentation_rect=[DW - 190, FY, 184, 17],
+                items=umenu_items(["Load a preset..."] + [f"{p['number']:02d} {p['name']}" for p in presets]),
+                fontsize=9.0, arrow=1,
+                bgcolor=rgba(C["field"]), bgfillcolor_type="color", bgfillcolor_color=rgba(C["field"]),
+                textcolor=rgba(C["text"]), elementcolor=rgba(C["brass"]), color=rgba(C["brass"]))
+    sel = box("sel " + " ".join(str(i + 1) for i in range(len(presets))), (40, 1130, 300, 22),
+              ins=2, outs=len(presets) + 1)              # item 0 is the "Load a preset..." header
     line(pmenu, 0, sel, 0)
     routed = [k for k in dial_ids]
     rt = box("route " + " ".join(routed), (40, 1220, 900, 22), ins=1, outs=len(routed) + 1)
     for j, k in enumerate(routed):
         line(rt, j, dial_ids[k], 0)
+
+    def shown(k, v):                          # preset values in dial units
+        return round(v * 100.0, 6) if k in PCT else v
     for j, p in enumerate(presets):
         vals = dict(p["params"])
-        items = [f"{k} {vals[k]}" for k in routed if k in vals]
+        items = [f"{k} {shown(k, vals[k])}" for k in routed if k in vals]
         items.append(f"ir {lib.index(p['ir']) if p['ir'] in lib else 0}")
         m = box(", ".join(items), (40 + 20 * j, 1160 + 2 * j, 200, 22), maxclass="message", ins=2, outs=1)
         line(sel, j, m, 0); line(m, 0, rt, 0)
-    comment("ECHOLIVITY  Fisher Spring Hybrid", (730, 148, 260, 18), size=11, bold=True)
 
     # init on load: bind H, report SR, load selected library IR
     t_init = box("t b b", (900, 60, 40, 22), ins=1, outs=2)
@@ -285,12 +370,11 @@ def build():
 
     pat = {"patcher": {
         "fileversion": 1, "appversion": APPV, "classnamespace": "box", "rect": [40, 80, 1300, 900],
-        "openrect": [0, 0, 0, 169], "openinpresentation": 1, "default_fontsize": 10.0,
+        "openrect": [0, 0, DW, 169], "openinpresentation": 1, "devicewidth": float(DW), "default_fontsize": 10.0,
         "default_fontname": "Arial", "gridsize": [8, 8], "boxes": boxes, "lines": lines,
         "description": "Echolivity - Fisher Spring Hybrid. Convolution + physical spring model + dub feedback.",
         "digest": "Hybrid spring reverb", "tags": "reverb spring dub",
-        "dependency_cache": [{"name": "ech_ir_loader.js", "bootpath": ".", "type": "TEXT", "implicit": 1},
-                             {"name": "ech_ui.js", "bootpath": ".", "type": "TEXT", "implicit": 1}],
+        "dependency_cache": [],
         "latency": 0, "is_mpe": 0, "minimum_live_version": "12.0", "minimum_max_version": "8.6"}}
     return pat, lib
 

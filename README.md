@@ -59,7 +59,7 @@ This is a **character model voiced from published K-10 documentation, not a hard
 1. Copy the whole repository folder somewhere permanent, for example `~/Music/Ableton/User Library/Echolivity/`. The device finds `ir/` relative to itself, so keep the folder structure.
 2. In Live 12, drag [`device/Echolivity.amxd`](device/Echolivity.amxd) onto an audio track or a return track.
 3. If Live won't open the `.amxd` or crashes, **save your work first** and run the diagnostic ladder (`python tools/make_bisect.py OUT`, then load the test devices from inside `device/`); the first one that crashes shows which part is responsible. The patch structure was aligned with what Max itself saves on 18 Nov 2026, after the same hand-built pattern crashed another Echolivity device. As a fallback, drop an empty *Max Audio Effect* on a track, open it in Max, open [`device/Echolivity.maxpat`](device/Echolivity.maxpat), copy everything into the device, and save. See [`docs/QA_PROTOCOL.md`](docs/QA_PROTOCOL.md), step 1.
-4. Before moving the device to another machine, open it in Max and **Freeze** it. That embeds the js files. The IR library still has to sit at `../ir/processed/` relative to the device, or you can drop WAVs onto the IR zone instead.
+4. Needs **Live 12 with Max 9** (the scripts are embedded with `v8.codebox`; no loose `.js` files). Before moving the device to another machine, you can still **Freeze** it in Max. The IR library still has to sit at `../ir/processed/` relative to the device, or you can drop WAVs onto the IR zone instead.
 
 **Recommended use:** put it on a return track with Mix at 100 %, and send rimshots, snares, skanks and chords to it. Turn Feedback up for regeneration and ride Self-Osc during a performance. More recipes are in [`docs/DUB_WORKFLOW.md`](docs/DUB_WORKFLOW.md).
 
@@ -171,7 +171,7 @@ Design rule: change DSP in `reference/engine.py` first, port it to `device/gen/*
 | `device/Echolivity.amxd` | The Max for Live device. Keep the folder structure; it finds `ir/` relative to itself. |
 | `device/Echolivity.maxpat` | The same patch, for opening in Max directly. |
 | `device/gen/*.genexpr` | The DSP code inside the device's three gen~ objects (front, convolution, back). |
-| `device/ech_ir_loader.js`, `device/ech_ui.js` | IR conditioning and partitioning, and the IR browser. |
+| `device/code/ech_ir_loader.js`, `device/code/ech_ui.js` | Source of the IR loader and IR browser. The build embeds them in the device (`v8.codebox`). |
 | `reference/` | Reference DSP engine (Python + numba). The specification the device is ported from. |
 | `ir/` | IR library: `originals/` (never modified), `processed/` (what the device loads), `CATALOGUE.md`. **This repository holds only the 5 synthetic IRs.** The third-party IRs (including the Fisher K-10) aren't published because their licenses are unconfirmed; their provenance records are here, and `ir/originals/third_party/README.md` says how to add the audio locally. |
 | `presets/` | 10 factory presets as JSON plus `index.json`. They're also built into the device's preset menu. |

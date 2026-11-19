@@ -21,6 +21,8 @@ UI = {"live.dial", "live.menu", "live.drop", "umenu", "comment", "live.comment",
 
 
 def first(b):
+    if b.get("maxclass") == "v8.codebox":
+        return "js"                      # embedded scripts count as the js layer
     return b.get("text", "").split(" ")[0]
 
 

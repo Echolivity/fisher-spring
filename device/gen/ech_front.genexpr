@@ -3,6 +3,13 @@
 // convolution send routing.
 // in1 L, in2 R, in3 dub feedback return (tapout~), in4 spring->IR send (tapout~)
 // out1 engine input eng (mono), out2 convolution input
+// gen~ rule: function definitions must come before every other statement
+
+asym(x, k, b) {
+	tb = tanh(k * b);
+	s2 = 1 - tb * tb;
+	return (tanh(k * (x + b)) - tb) / (k * s2);
+}
 
 Param drive(0.25, min=0, max=1);
 Param predelay(0, min=0, max=250);
@@ -14,12 +21,6 @@ History dcx(0);
 History dcy(0);
 History pd_sm(-1);
 Delay pd(30000);
-
-asym(x, k, b) {
-	tb = tanh(k * b);
-	s2 = 1 - tb * tb;
-	return (tanh(k * (x + b)) - tb) / (k * s2);
-}
 
 mono = 0.5 * (in1 + in2);
 

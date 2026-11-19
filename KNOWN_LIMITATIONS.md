@@ -5,6 +5,12 @@
 - These are unproven: gen~ compiling, the hand-built `.amxd` header loading in Live, the UI, real CPU use, the `---` per-instance buffer names, and the pattrstorage recall of the User IR path.
 - The fallback if the `.amxd` won't load is to open the `.maxpat` (see the README).
 - **Fixed 19 Nov — no audio in Live (first real test):** the patch used `plugin~ 2` / `plugout~ 2`. In Max the number selects one channel, so the device only received the right input, and a mono or left-only source arrived as silence. Now `plugin~` / `plugout~` (channels 1 and 2). The IR loader also read the file's sample rate from the wrong `info~` outlet (6 instead of 0), which would have mis-resampled every IR. `tests/test_patch.py` now checks both, plus every connection into the IR loader.
+- **Fixed 19 Nov — gen~ didn't compile (Max console from the first test):**
+  - "function definitions not allowed here": gen~ wants helper functions before every other statement, including `Param` declarations. Moved to the top of each gen~ file.
+  - "variable m is not defined": variables first created inside loops in the convolution code. Every such variable is now declared at the top level.
+  - "can't find file ech_ir_loader.js / ech_ui.js": both scripts are now embedded in the device (`v8.codebox`, needs Max 9). The buffer names reach them as a load-time message.
+  - `tests/test_patch.py` checks all three.
+- Each of these was invisible outside Max. More gen~ compile errors may surface once these are cleared; the Max console will name them.
 - **Load-crash risk (mitigated, unverified):** a hand-built patch with the same structure crashed Live 12.4.15 / Max 9.1.5 inside the gen~ compiler (Twin Phasor 76, Nov 2026). On 18 Nov the build was changed to match Max's own conventions: `obj-N` ids inside the gen~ objects, a root parameter table with Push banks, and the root keys and `project` block Max writes. That fixed Twin Phasor; it hasn't been tested on this device yet. `tools/make_bisect.py` builds a 4-step diagnostic ladder.
 
 ## DSP

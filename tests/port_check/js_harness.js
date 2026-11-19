@@ -17,11 +17,15 @@ class Buffer {
   send(msg, n) { if (msg === "sizeinsamps") this.b.data = this.b.data.map(() => new Array(n).fill(0)); }
 }
 const outs = [];
-const ctx = { jsarguments: ["ech_ir_loader.js", "IR", "H"], Buffer, Math, Array, console,
+const ctx = { Buffer, Math, Array, console,
   Task: class { constructor(f, t) { this.f = f; } schedule() {} cancel() {} },
   outlet: (i, ...a) => outs.push([i, ...a]) };
 vm.createContext(ctx);
-vm.runInContext(fs.readFileSync(path.join(__dirname, "../../device/code/ech_ir_loader.js"), "utf8"), ctx);
+// run the code exactly as embedded in the device (v8.codebox "ech_ir_loader")
+const pat = JSON.parse(fs.readFileSync(path.join(__dirname, "../../device/Echolivity.maxpat"), "utf8")).patcher;
+const code = pat.boxes.map(b => b.box).find(b => b.varname === "ech_ir_loader").code;
+vm.runInContext(code, ctx);
+ctx.names("IR", "H");
 ctx.sr(+hostsr); ctx.irsr(+irsr); ctx.decay(+decay); ctx.damping(+damping);
 const t0 = Date.now(); ctx.load(); const ms = Date.now() - t0;
 fs.writeFileSync(outPath, JSON.stringify({ outs, ms, H: store.H.data }));

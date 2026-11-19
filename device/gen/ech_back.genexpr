@@ -4,6 +4,28 @@
 // in1 dry L, in2 dry R, in3 engine input e (from FRONT),
 // in4 convolution L, in5 convolution R
 // out1 L, out2 R, out3 dub feedback send (-> tapin~), out4 spring->IR send (-> tapin~)
+// gen~ rule: function definitions must come before every other statement
+
+asym(x, k, b) {
+	tb = tanh(k * b);
+	s2 = 1 - tb * tb;
+	return (tanh(k * (x + b)) - tb) / (k * s2);
+}
+
+opc(fc) {
+	return 1 - exp(-twopi * fc / samplerate);
+}
+
+modelpeak(dec, ten, disp) {
+	kk = max(1, floor(samplerate / 22050 + 0.5));
+	aa = -(0.45 + 0.35 * disp);
+	lp = 0.08 - 0.05 * ten;
+	apd = 64 * kk * (1 - aa) / (1 + aa);
+	tdl = kk * (1 - aa * aa) / (1 + 2 * aa * cos(kk * twopi * 400 / samplerate) + aa * aa);
+	le = (max(lp * samplerate - apd, 8) + 64 * tdl) / samplerate;
+	gg = pow(10, -3 * le / (1.15 * dec));
+	return 0.3 * sqrt(1 - gg * gg) * 5.5 / (1 - gg);
+}
 
 Param decay(2.0, min=0.3, max=8);
 Param damping(0.8, min=0, max=1);
@@ -40,27 +62,9 @@ Data st(64);              // misc state, see indices below
 // 10,11 wob  12,13 wob2  14 lfo  15,16 damp  17-20 peak tdf2  21,22 splash
 // 23-26 out dc  27 api  28-38 feedback  39-43,50 output  44 init  45-49 gain smooth  51-56,58,59 tank/recovery  57 osc agc
 
-asym(x, k, b) {
-	tb = tanh(k * b);
-	s2 = 1 - tb * tb;
-	return (tanh(k * (x + b)) - tb) / (k * s2);
-}
 
-opc(fc) {
-	return 1 - exp(-twopi * fc / samplerate);
-}
-
-
-modelpeak(dec, ten, disp) {
-	kk = max(1, floor(samplerate / 22050 + 0.5));
-	aa = -(0.45 + 0.35 * disp);
-	lp = 0.08 - 0.05 * ten;
-	apd = 64 * kk * (1 - aa) / (1 + aa);
-	tdl = kk * (1 - aa * aa) / (1 + 2 * aa * cos(kk * twopi * 400 / samplerate) + aa * aa);
-	le = (max(lp * samplerate - apd, 8) + 64 * tdl) / samplerate;
-	gg = pow(10, -3 * le / (1.15 * dec));
-	return 0.3 * sqrt(1 - gg * gg) * 5.5 / (1 - gg);
-}
+// gen~ scoping: declare variables used inside loops/ifs at the top level
+i = 0; idx = 0; wd0 = 0; wa = 0; wd1 = 0; wb = 0; gi = 0; gm = 0;
 
 mode = floor(engine_mode + 0.5);
 serial = mode >= 3 ? 1 : 0;

@@ -143,8 +143,18 @@ def build():
     # ---- IR machinery --------------------------------------------------------------
     irbuf = box("buffer~ ---echIR", (600, 160, 110, 22), ins=1, outs=2, outlettype=["float", "bang"])
     hbuf = box("buffer~ ---echH 1 2", (600, 300, 120, 22), ins=1, outs=2, outlettype=["float", "bang"])
-    loader = box("js ech_ir_loader.js ---echIR ---echH", (600, 240, 220, 22), ins=1, outs=2)
-    ui = box("js ech_ui.js", (600, 100, 80, 22), ins=1, outs=4)
+    # Scripts are embedded (Max 9 v8.codebox), not separate .js files: Live couldn't find the
+    # files on the first real test (19 Nov). Embedded code can't take "---" arguments, so the
+    # per-instance buffer names arrive as a "names" message (message boxes do expand "---").
+    loader_code = open(os.path.join(DEV, "code", "ech_ir_loader.js")).read()
+    loader_code = loader_code.replace(
+        'var irName = jsarguments[1] || "echIR";\nvar hName = jsarguments[2] || "echH";',
+        'var irName = "echIR";\nvar hName = "echH";\nfunction names(a, b) { irName = String(a); hName = String(b); }')
+    assert "jsarguments" not in loader_code
+    ui_code = open(os.path.join(DEV, "code", "ech_ui.js")).read().replace("__LIB__", json.dumps(lib))
+    loader = box(None, (600, 240, 260, 120), maxclass="v8.codebox", ins=1, outs=2, code=loader_code,
+                 varname="ech_ir_loader")
+    ui = box(None, (600, 100, 260, 120), maxclass="v8.codebox", ins=1, outs=4, code=ui_code, varname="ech_ui")
     info = box("info~ ---echIR", (760, 190, 90, 22), ins=1, outs=10)
     tbb = box("t b b", (600, 190, 40, 22), ins=1, outs=2)
     msg_load = box("load", (600, 215, 40, 22), maxclass="message", ins=2, outs=1)
@@ -173,8 +183,13 @@ def build():
     line(route_l, 2, pre_pk, 0); line(route_l, 3, pre_hi, 0)
     line(pre_bs, 0, conv, 0); line(pre_np, 0, conv, 0)
     line(pre_pk, 0, back, 0); line(pre_hi, 0, back, 0)
-    line(thisdev, 0, bind, 0); line(bind, 0, conv, 0)
-    line(thisdev, 0, dsp, 0); line(dsp, 1, pre_sr, 0); line(pre_sr, 0, loader, 0)
+    # load order (trigger fires right to left): buffer names -> H binding + sample rate -> IR choice
+    t_load = box("t b b b", (900, 60, 60, 22), ins=1, outs=3)
+    names = box("names ---echIR ---echH", (1080, 80, 140, 22), maxclass="message", ins=2, outs=1)
+    line(thisdev, 0, t_load, 0)
+    line(t_load, 2, names, 0); line(names, 0, loader, 0)
+    line(t_load, 1, bind, 0); line(bind, 0, conv, 0)
+    line(t_load, 1, dsp, 0); line(dsp, 1, pre_sr, 0); line(pre_sr, 0, loader, 0)
     line(ui, 3, store, 0); line(store, 0, pre_restore, 0); line(pre_restore, 0, ui, 0)
 
     # ---- UI ---------------------------------------------------------------------------
@@ -265,7 +280,7 @@ def build():
 
     # init on load: bind H, report SR, load selected library IR
     t_init = box("t b b", (900, 60, 40, 22), ins=1, outs=2)
-    line(thisdev, 0, t_init, 0)
+    line(t_load, 0, t_init, 0)
     line(t_init, 0, dial_ids["ir"], 0)        # bang -> live.menu re-outputs current IR choice
 
     pat = {"patcher": {
@@ -344,9 +359,7 @@ def finalize(pat):
 def main():
     pat, lib = build()
     finalize(pat)
-    js = open(os.path.join(DEV, "code", "ech_ui.js")).read().replace("__LIB__", json.dumps(lib))
-    open(os.path.join(DEV, "ech_ui.js"), "w").write(js)
-    open(os.path.join(DEV, "ech_ir_loader.js"), "w").write(open(os.path.join(DEV, "code", "ech_ir_loader.js")).read())
+    # scripts are embedded in the patch (v8.codebox); no loose .js files next to the device
     txt = json.dumps(pat, indent=1)
     open(os.path.join(DEV, "Echolivity.maxpat"), "w").write(txt)
     body = txt.encode("utf-8") + b"\x00"

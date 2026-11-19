@@ -55,8 +55,29 @@ def test_every_connection_in_range():
 
 
 def test_ir_loader_receives_load_and_sample_rates():
-    loader = [b for b in BOXES.values() if b.get("text", "").startswith("js ech_ir_loader.js")][0]["id"]
+    loader = [b for b in BOXES.values() if b.get("varname") == "ech_ir_loader"][0]["id"]
     feeds = {BOXES[l["patchline"]["source"][0]].get("text", "") for l in P["lines"]
              if l["patchline"]["destination"][0] == loader}
-    for needed in ("load", "prepend irsr", "prepend sr", "prepend decay", "prepend damping"):
+    for needed in ("load", "prepend irsr", "prepend sr", "prepend decay", "prepend damping",
+                   "names ---echIR ---echH"):
         assert needed in feeds, f"IR loader gets nothing from '{needed}'"
+
+
+def test_scripts_are_embedded():
+    """No [js file.js] boxes: Live could not find the files (19 Nov)."""
+    assert not by_first_word("js")
+    codeboxes = [b for b in BOXES.values() if b["maxclass"] == "v8.codebox"]
+    assert len(codeboxes) == 2 and all(len(b.get("code", "")) > 500 for b in codeboxes)
+    assert all("jsarguments" not in b["code"] for b in codeboxes)
+
+
+def test_gen_functions_come_first():
+    """gen~: 'function definitions must precede all statements' (Max console, 19 Nov)."""
+    import re
+    for f in ("ech_front", "ech_back", "ech_conv"):
+        src = re.sub(r"//[^\n]*", "", open(os.path.join(ROOT, "device", "gen", f + ".genexpr")).read())
+        lines = [l for l in src.split("\n") if l.strip()]
+        first_stmt = next((i for i, l in enumerate(lines) if not re.match(r"^\w+\s*\([\w\s,]*\)\s*\{$", l)
+                           and not l.startswith(("\t", "}"))), 0)
+        later_funcs = [l for l in lines[first_stmt:] if re.match(r"^\w+\s*\([\w\s,]*\)\s*\{$", l)]
+        assert not later_funcs, f"{f}: function defined after a statement: {later_funcs}"

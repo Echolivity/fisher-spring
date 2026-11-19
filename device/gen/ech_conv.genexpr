@@ -26,6 +26,12 @@ History pos(0);
 History twn(0);
 History lastK(0);
 
+// gen~ scoping: declare every variable used inside loops/ifs at the top level
+i = 0; j = 0; k = 0; b = 0; m = 0; k0 = 0; k1 = 0; slot = 0; fb = 0; hb = 0;
+xr = 0; xi = 0; hlr = 0; hli = 0; hrr = 0; hri = 0; job = 0; sgn = 0;
+tr = 0; ti = 0; span = 0; half = 0; tstep = 0; wr = 0; wi = 0; pr = 0; pi2 = 0;
+vr = 0; vi = 0; ur = 0; ui = 0; fbase = 0;
+
 B = floor(bsize);
 N = 2 * B;
 Kp = floor(nparts);
@@ -118,11 +124,11 @@ if (c >= B - 1) {
 			}
 			j += m;
 		}
-		len = 2;
-		while (len <= N) {
-			half = floor(len / 2);
-			tstep = floor(N / len);
-			for (i = 0; i < N; i += len) {
+		span = 2;
+		while (span <= N) {
+			half = floor(span / 2);
+			tstep = floor(N / span);
+			for (i = 0; i < N; i += span) {
 				for (k = 0; k < half; k += 1) {
 					wr = peek(tw, k * tstep, 0);
 					wi = sgn * peek(tw, k * tstep, 1);
@@ -134,7 +140,7 @@ if (c >= B - 1) {
 					poke(re, ur - vr, i + k + half); poke(im, ui - vi, i + k + half);
 				}
 			}
-			len *= 2;
+			span *= 2;
 		}
 		if (job < 2) {
 			for (b = 0; b < B; b += 1) {
@@ -142,10 +148,10 @@ if (c >= B - 1) {
 			}
 		} else if (Kp > 0) {
 			pos = (pos - 1 + Kp) % Kp;
-			base = pos * (B + 1) * 2;
+			fbase = pos * (B + 1) * 2;
 			for (b = 0; b <= B; b += 1) {
-				poke(fdl, peek(re, b), base + 2 * b);
-				poke(fdl, peek(im, b), base + 2 * b + 1);
+				poke(fdl, peek(re, b), fbase + 2 * b);
+				poke(fdl, peek(im, b), fbase + 2 * b + 1);
 			}
 			for (b = 0; b < B; b += 1) {
 				poke(inb, peek(inb, B + b), b);

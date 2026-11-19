@@ -4,7 +4,7 @@
     "48000Hz_decay8.0_damp0.0": {
       "B": 512,
       "K": 47,
-      "js_ms": 76,
+      "js_ms": 70,
       "ir_vs_reference_max_rel_err": 8.214424588369203e-15,
       "ir_peak_rel_err": 8.43769498715119e-15,
       "gen_conv_vs_direct_max_rel_err": 9.928231429287818e-16,
@@ -13,7 +13,7 @@
     "44100Hz_decay1.0_damp0.6": {
       "B": 512,
       "K": 44,
-      "js_ms": 369,
+      "js_ms": 384,
       "ir_vs_reference_max_rel_err": 0.003008152644739758,
       "ir_peak_rel_err": 0.0022975001615224144,
       "gen_conv_vs_direct_max_rel_err": 7.2959095712168175e-16,
@@ -22,7 +22,7 @@
     "96000Hz_decay2.0_damp0.3": {
       "B": 1024,
       "K": 47,
-      "js_ms": 743,
+      "js_ms": 792,
       "ir_vs_reference_max_rel_err": 0.0010360899137512875,
       "ir_peak_rel_err": 0.00021279821961628365,
       "gen_conv_vs_direct_max_rel_err": 9.45949518956157e-16,

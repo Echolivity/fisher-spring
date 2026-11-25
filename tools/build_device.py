@@ -12,6 +12,11 @@ sys.path.insert(0, ROOT)
 from reference.params import PARAMS, ENGINE_MODES  # noqa
 
 DEV = os.path.join(ROOT, "device")
+# Hardware-replica panel (Echolivity family look): brushed-brass faceplate after the Fisher K-10,
+# engraved section frames, image knobs under transparent live.dial graphics. Images are rendered
+# by tools/render_panel.py into device/ (fisher_*.png, 1x and @2x), next to the .amxd.
+sys.path.insert(0, os.path.join(ROOT, "tools"))
+import hwpanel  # noqa: E402
 APPV = {"major": 8, "minor": 6, "revision": 0, "architecture": "x64", "modernui": 1}
 
 boxes, lines = [], []
@@ -91,7 +96,15 @@ def rgba(h, a=1.0):
 C = {"bg": "#16130f", "panel": "#211a14", "border": "#5a4630", "brass": "#d4ae5f", "brass_hi": "#e9c97f",
      "orange": "#d9774a", "text": "#d9c7ae", "muted": "#9d8b76", "track": "#3a2f25", "cream": "#f3ead9",
      "field": "#100d0a"}
+# hardware panel: legends engraved dark on brass (fields stay dark with light text)
+C.update({"text": "#24180c", "muted": "#4a3721", "brass": "#1e140a", "brass_hi": "#1e140a",
+          "orange": "#9a3412", "field_text": "#e9dcc4"})
 DUB_ACCENT = {"feedback", "self_osc", "fb_drive", "fb_tone", "fb_damping"}
+KNOB_BOX = 26          # image knob size; centred between a 44x48 live.dial's name and value
+KNOB_DY = 26           # knob centre below the dial's top edge
+SPEC = {"prefix": "fisher_", "H": 169, "screws": False, "knob_boxes": {"fs": KNOB_BOX}, "knobs": {}, "frames": [],
+        "finish": {"base": (178, 146, 88), "texture": "brushed", "legend": (36, 24, 12),
+                   "rule": (110, 86, 50)}}
 
 # Unitless 0..1 / -1..1 / 0..2 controls are shown in percent: the dial runs x100 and a
 # [* 0.01] box scales it back before gen~, so the DSP ranges are unchanged.
@@ -123,12 +136,23 @@ def dial(k, prect):
     if k in ("decay", "predelay"):
         va["parameter_exponent"] = 2.0
     acc = C["orange"] if k in DUB_ACCENT else C["brass"]
-    return box(None, (40 + 60 * len(boxes) % 1200, 900, 44, 48), maxclass="live.dial", ins=1, outs=2,
-               outlettype=["", "float"], parameter_enable=1, presentation=1,
-               presentation_rect=list(prect), saved_attribute_attributes={"valueof": va},
-               varname=LABEL[k], showname=1, shownumber=1, fontsize=9.0,
-               activedialcolor=rgba(acc), dialcolor=rgba(C["track"]), activeneedlecolor=rgba(C["cream"]),
-               needlecolor=rgba(C["muted"]), textcolor=rgba(C["text"]), focusbordercolor=rgba(acc))
+    # image knob first (drawn below), then the dial with transparent knob graphics on top
+    SPEC["knobs"][k] = {"cx": prect[0] + prect[2] / 2, "cy": prect[1] + KNOB_DY, "kind": "fs", "scale": "none"}
+    pic = box(None, (1700, 20 + 30 * len(SPEC["knobs"]), KNOB_BOX, KNOB_BOX), maxclass="fpic", ins=1, outs=0,
+              outlettype=[], presentation=1, presentation_rect=hwpanel.rect(SPEC, "knob", k),
+              pic=hwpanel.image_name(SPEC, "knob", k), autofit=0)
+    d = box(None, (40 + 60 * len(boxes) % 1200, 900, 44, 48), maxclass="live.dial", ins=1, outs=2,
+            outlettype=["", "float"], parameter_enable=1, presentation=1,
+            presentation_rect=list(prect), saved_attribute_attributes={"valueof": va},
+            varname=LABEL[k], showname=1, shownumber=1, fontsize=9.0, fontname="Arial Bold",
+            textcolor=rgba(C["orange"] if k in DUB_ACCENT else C["text"]), focusbordercolor=rgba(acc),
+            triangle=0, **{c: hwpanel.CLEAR for c in ("activedialcolor", "dialcolor", "activeneedlecolor",
+                                                      "needlecolor", "tricolor")})
+    fr = box("expr " + hwpanel.knob_frame_expr(KNOB_BOX, lo, hi, va.get("parameter_exponent", 1.0)),
+             (1760, 20 + 30 * len(SPEC["knobs"]), 300, 22))
+    of = box("prepend offset 0", (2080, 20 + 30 * len(SPEC["knobs"]), 110, 22))
+    line(d, 0, fr, 0); line(fr, 0, of, 0); line(of, 0, pic, 0)
+    return d
 
 
 def comment(text, prect, size=10, bold=False, color="text"):
@@ -146,8 +170,8 @@ def panel(prect, fill="panel", border="border", rounded=6):
 
 
 def menu_style(acc="brass"):
-    return dict(bgcolor=rgba(C["field"]), activebgcolor=rgba(C["field"]), textcolor=rgba(C["text"]),
-                tricolor=rgba(C[acc]), bordercolor=rgba(C["border"]), focusbordercolor=rgba(C[acc]),
+    return dict(bgcolor=rgba(C["field"]), activebgcolor=rgba(C["field"]), textcolor=rgba(C["field_text"]),
+                tricolor=rgba(C["field_text"]), bordercolor=rgba(C["border"]), focusbordercolor=rgba(C["field_text"]),
                 fontsize=9.0)
 
 
@@ -259,7 +283,13 @@ def build():
     COLS = [7, 57, 107]                      # dial x offsets inside a section
     ROW = [22, 84]                           # dial rows (live.dial: name above, value below)
     DW = SX + 5 * SW + 4 * GAP + 6
-    panel([0, 0, DW, 169], fill="bg", border=None, rounded=0)
+    SPEC["W"] = DW              # = devicewidth
+    panel([0, 0, DW, 169], fill="bg", border=None, rounded=0)           # fallback if images missing
+    comment("Panel images not found: keep the fisher_*.png files next to the .amxd, or Freeze the device in Max.",
+            (12, 60, 600, 16), size=9, color="field_text")
+    boxes[-1]["box"]["background"] = 1
+    box(None, (1700, 0, 120, 30), maxclass="fpic", ins=1, outs=0, outlettype=[], presentation=1,
+        presentation_rect=[0, 0, DW, 169], pic=hwpanel.image_name(SPEC, "faceplate"), autofit=0, background=1)
     secs = [("CORE", ["drive", "decay", "tone", "damping", "mix", "output"]),
             ("SPRING", ["boing", "tension", "dispersion", "resonance", "movement"]),
             ("HYBRID", ["ir_level", "model_level", "blend"]),
@@ -285,7 +315,7 @@ def build():
 
     for n, (title, keys) in enumerate(secs):
         x = SX + n * (SW + GAP)
-        panel([x, SY, SW, SH])
+        SPEC["frames"].append((x, SY, SW, SH))
         comment(title, (x + 6, SY + 2, SW - 12, 16), size=9, bold=True,
                 color="orange" if title == "DUB" else "brass")
         if title in ("HYBRID", "ADVANCED"):
@@ -327,7 +357,7 @@ def build():
             drop = box(None, (650, 900, 140, 20), maxclass="live.drop", ins=1, outs=2,
                        outlettype=["", ""], presentation=1, presentation_rect=[x + 7, SY + 54, SW - 14, 22],
                        parameter_enable=0, legend="Drop your own IR (WAV)", fontsize=8.0,
-                       bgcolor=rgba(C["field"]), bordercolor=rgba(C["border"]), textcolor=rgba(C["muted"]),
+                       bgcolor=rgba(C["field"]), bordercolor=rgba(C["border"]), textcolor=rgba(C["field_text"]),
                        focusbordercolor=rgba(C["brass"]))
             line(drop, 0, pre_user, 0); line(pre_user, 0, ui, 0)
 
@@ -443,6 +473,12 @@ def finalize(pat):
 def main():
     pat, lib = build()
     finalize(pat)
+    pics = sorted({b["box"]["pic"] for b in pat["patcher"]["boxes"] if b["box"]["maxclass"] == "fpic"})
+    pat["patcher"]["dependency_cache"] = [{"name": n, "type": "PNG", "implicit": 1} for n in pics] + \
+        [{"name": n.replace(".png", "@2x.png"), "type": "PNG", "implicit": 1} for n in pics]
+    missing = [n for n in pics if not os.path.exists(os.path.join(DEV, n))]
+    if missing:
+        print("WARNING: panel images missing in device/ (run tools/render_panel.py):", missing)
     # scripts are embedded in the patch (v8.codebox); no loose .js files next to the device
     txt = json.dumps(pat, indent=1)
     open(os.path.join(DEV, "Echolivity.maxpat"), "w").write(txt)

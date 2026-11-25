@@ -57,7 +57,7 @@ This is a **character model voiced from published K-10 documentation, not a hard
 ## Install
 
 1. Copy the whole repository folder somewhere permanent, for example `~/Music/Ableton/User Library/Echolivity/`. The device finds `ir/` relative to itself, so keep the folder structure.
-2. In Live 12, drag [`device/Echolivity.amxd`](device/Echolivity.amxd) onto an audio track or a return track.
+2. In Live 12, drag [`device/Echolivity.amxd`](device/Echolivity.amxd) onto an audio track or a return track. The `fisher_*.png` panel images in `device/` must stay next to it (Freeze in Max stores them inside the device).
 3. If Live won't open the `.amxd` or crashes, **save your work first** and run the diagnostic ladder (`python tools/make_bisect.py OUT`, then load the test devices from inside `device/`); the first one that crashes shows which part is responsible. The patch structure was aligned with what Max itself saves on 18 Nov 2026, after the same hand-built pattern crashed another Echolivity device. As a fallback, drop an empty *Max Audio Effect* on a track, open it in Max, open [`device/Echolivity.maxpat`](device/Echolivity.maxpat), copy everything into the device, and save. See [`docs/QA_PROTOCOL.md`](docs/QA_PROTOCOL.md), step 1.
 4. Needs **Live 12 with Max 9** (the scripts are embedded with `v8.codebox`; no loose `.js` files). Before moving the device to another machine, you can still **Freeze** it in Max. The IR library still has to sit at `../ir/processed/` relative to the device, or you can drop WAVs onto the IR zone instead.
 
@@ -169,6 +169,7 @@ Design rule: change DSP in `reference/engine.py` first, port it to `device/gen/*
 | Path | What it is |
 |---|---|
 | `device/Echolivity.amxd` | The Max for Live device. Keep the folder structure; it finds `ir/` relative to itself. |
+| `device/fisher_*.png` | Hardware-panel images (1x and @2x), rendered by `tools/render_panel.py` with the shared `tools/hwpanel.py`. |
 | `device/Echolivity.maxpat` | The same patch, for opening in Max directly. |
 | `device/gen/*.genexpr` | The DSP code inside the device's three gen~ objects (front, convolution, back). |
 | `device/code/ech_ir_loader.js`, `device/code/ech_ui.js` | Source of the IR loader and IR browser. The build embeds them in the device (`v8.codebox`). |

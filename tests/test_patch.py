@@ -100,7 +100,9 @@ def test_dials_reach_dsp_in_dsp_units():
             "feedback": "Feedback", "fb_tone": "FB Tone", "fb_drive": "FB Drive", "fb_damping": "FB Damping",
             "self_osc": "Self-Osc", "predelay": "Pre-delay", "width": "Width", "modulation": "Modulation"}.get(k))
         factor = 1.0
-        targets = [BOXES[l["destination"][0]] for l in outgoing(b["id"])]
+        # the hardware panel's image driver ([expr] -> [prepend offset 0] -> fpic) is not a DSP path
+        targets = [BOXES[l["destination"][0]] for l in outgoing(b["id"])
+                   if not BOXES[l["destination"][0]].get("text", "").startswith("expr -int(")]
         if len(targets) == 1 and targets[0].get("text") == "* 0.01":
             factor = 0.01
             targets = [BOXES[l["destination"][0]] for l in outgoing(targets[0]["id"])]
@@ -112,7 +114,9 @@ def test_dials_reach_dsp_in_dsp_units():
 
 def test_panel_layout_fits_and_does_not_overlap():
     W = P["devicewidth"]
-    items = [b for b in BOXES.values() if b.get("presentation") and b["maxclass"] != "panel"]
+    # images (fpic) are underlays and the background-layer fallback message is covered by the faceplate
+    items = [b for b in BOXES.values() if b.get("presentation") and b["maxclass"] not in ("panel", "fpic")
+             and not b.get("background")]
     for b in items:
         x, y, w, h = b["presentation_rect"]
         assert x >= 0 and y >= 0 and x + w <= W and y + h <= 169, (b.get("varname") or b.get("text"), b["presentation_rect"])
@@ -129,3 +133,32 @@ def test_preset_menu_entries_match_selector():
     sel = [b for b in BOXES.values() if b.get("text", "").startswith("sel ")][0]
     picks = [int(t) for t in sel["text"].split()[1:]]
     assert picks == list(range(1, n_entries)), (n_entries, picks)   # entry 0 is the header
+
+
+def test_hardware_panel_image_knobs():
+    """Hardware panel: one image knob per dial, drawn before it, horizontally centred on it and
+    between its name and value, driven by the dial; faceplate in the background layer; every
+    image present next to the device in 1x and @2x."""
+    import os
+    order = [b["box"]["id"] for b in P["boxes"]]
+    dials = [b for b in BOXES.values() if b["maxclass"] == "live.dial"]
+    pics = {b["id"]: b for b in BOXES.values() if b["maxclass"] == "fpic"}
+    face = [b for b in pics.values() if b.get("background") == 1]
+    assert len(face) == 1 and face[0]["presentation_rect"] == [0, 0, P["devicewidth"], 169]
+    assert len(pics) == len(dials) + 1
+    for d in dials:
+        fr = [BOXES[l["destination"][0]] for l in outgoing(d["id"])
+              if BOXES[l["destination"][0]].get("text", "").startswith("expr -int(")]
+        assert len(fr) == 1, d["varname"]
+        of = [BOXES[l["destination"][0]] for l in outgoing(fr[0]["id"])]
+        assert len(of) == 1 and of[0]["text"] == "prepend offset 0"
+        pic = [BOXES[l["destination"][0]] for l in outgoing(of[0]["id"])]
+        assert len(pic) == 1 and pic[0]["maxclass"] == "fpic"
+        pic = pic[0]
+        assert order.index(pic["id"]) < order.index(d["id"])
+        dx, dy, dw, dh = d["presentation_rect"]; px, py, pw, ph = pic["presentation_rect"]
+        assert abs((px + pw / 2) - (dx + dw / 2)) < 0.11 and dy + 11 <= py and py + ph <= dy + dh - 9
+        assert all(d[c] == [0.0, 0.0, 0.0, 0.0] for c in ("activedialcolor", "dialcolor", "needlecolor"))
+    for b in pics.values():
+        for n in (b["pic"], b["pic"].replace(".png", "@2x.png")):
+            assert os.path.exists(os.path.join(ROOT, "device", n)), n

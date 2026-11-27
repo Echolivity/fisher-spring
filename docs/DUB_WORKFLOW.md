@@ -17,14 +17,13 @@ Owner: Dub Organiser (with the Dub Producer). These are written as step-by-step 
 1. Use R2, then also turn on SPRING → DELAY at −inf and bring it up slowly.
 2. Live allows sends between return tracks. The loop's level is the product of the two send levels. **Safeguards:**
    - Put Limiter on DELAY (ceiling −3 dB).
-   - Keep Echolivity's Self-Osc at 0, so its runaway guard stays fully on.
    - Map both sends to one Macro so you can kill the loop with a single knob.
-3. Use Echolivity's FB Tone to stop the loop building bass. Tilt it to +0.3.
+3. Use Echolivity's Tone to stop the loop building bass. Tilt it to +0.3.
 
-## R4 — Performance dub (internal feedback)
-1. SPRING return with *07 DUB - Infinite Dub*.
-2. MIDI-map **Feedback**, **Self-Osc**, **FB Tone** and **Tension** to four hardware knobs.
-3. Gesture: throw a rimshot, raise Self-Osc to about 40% until it sings, sweep Tension for a pitch dive, then pull Self-Osc back down. The guard brings the level back under control within about 1 s.
+## R4 — Performance dub
+1. SPRING return with *07 DUB - Long Dub Tail*.
+2. MIDI-map **Mix**, **Decay**, **Tension** and **Boing** to four hardware knobs.
+3. Gesture: throw a rimshot, open Decay for a long wash, sweep Tension for a pitch dive, then pull Decay back. For regeneration, use R3 (the delay ↔ spring loop): Fisher Spring has no internal feedback since 27 Nov 2026.
 
 ## R5 — Spring in the drum bus (insert)
 Use *09 PERC - Short Percussion Spring* at 20–30% Mix directly on the hats or percussion bus. Keep Width at 140% or less for mono compatibility. The stereo correlation check shows 0 to 0.9 correlation and no mono cancellation.

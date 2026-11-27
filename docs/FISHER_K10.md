@@ -21,7 +21,7 @@ Owner: DSP Engineer, with the Dub Organiser for provenance. This file records wh
 | Driver: V1 = 7247 (one 12AX7 section plus one 12AU7 section). The 12AX7 has a bypassed 3.3 kΩ cathode (plate 105 V, cathode 1.3 V per the Photofact), so it has high gain. Its 12AU7 cathode follower (cathode 8.5 V, 680 Ω bypassed by 25 µF) drives the tank's matching transformer T2 directly (300 Ω / 175 Ω windings). The Photofact also shows mild shunt feedback from the follower's output to V1a's grid (10 MΩ via 0.01 µF; roughly 5 dB). Maximum input 5 V. | This justifies a hot, saturating drive stage before the tank. A follower driving a low-impedance transformer clips asymmetrically when it runs out of current, which matches the biased (asymmetric) curve Drive uses. Calibrating Drive in volts is still open; the Photofact voltages are the starting point. |
 | Output: each channel goes through a 12AX7 stage (V3a/V3b) carrying dry plus wet. Overall gain is unity. | Output colour stage (asymmetric, follows Drive). |
 | Control unit: R24, a 250 kΩ wet-level pot with a push-pull on/off switch. Modes NORMAL (stereo dry + mono wet), REVERB ONLY (mono wet), CENTER (mono dry + wet). | Mix (NORMAL), Mix 100% (REVERB ONLY). There is no CENTER-mode preset yet. |
-| The manual warns that the tank can howl from speaker feedback (acoustic feedback). | The dub feedback loop and Self-Osc recreate this deliberately, with a guard against runaway. |
+| The manual warns that the tank can howl from speaker feedback (acoustic feedback). | Not modelled. The device had a dub feedback loop for this until 27 Nov 2026; for regeneration now, loop it with a delay return (`docs/DUB_WORKFLOW.md`, R3). |
 
 ## Checking the third-party K-10 IR against the manual
 

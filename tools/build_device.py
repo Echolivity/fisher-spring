@@ -69,11 +69,8 @@ def gen_box(name, n_in, n_out, rect):
 LABEL = {"drive": "Drive", "decay": "Decay", "tone": "Tone", "damping": "Damping", "mix": "Mix",
          "output": "Output", "boing": "Boing", "tension": "Tension", "dispersion": "Dispersion",
          "resonance": "Resonance", "movement": "Movement", "ir_level": "IR Level",
-         "model_level": "Model Level", "blend": "Hybrid Blend", "feedback": "Feedback",
-         "fb_tone": "FB Tone", "fb_drive": "FB Drive", "fb_damping": "FB Damping",
-         "self_osc": "Self-Osc", "predelay": "Pre-delay", "width": "Width", "modulation": "Modulation"}
-SHORT = {"model_level": "Model", "ir_level": "IR", "blend": "Blend", "self_osc": "Self-Osc",
-         "fb_damping": "FB Damp", "dispersion": "Disperse", "resonance": "Reso", "modulation": "Mod",
+         "model_level": "Model Level", "blend": "Hybrid Blend", "predelay": "Pre-delay", "width": "Width", "modulation": "Modulation"}
+SHORT = {"model_level": "Model", "ir_level": "IR", "blend": "Blend", "dispersion": "Disperse", "resonance": "Reso", "modulation": "Mod",
          "movement": "Motion", "predelay": "Pre-Dly"}
 FRONT = {"drive", "predelay", "engine_mode"}
 BACK = set(PARAMS) - {"predelay"}
@@ -91,7 +88,6 @@ def rgba(h, a=1.0):
 C = {"bg": "#16130f", "panel": "#211a14", "border": "#5a4630", "brass": "#d4ae5f", "brass_hi": "#e9c97f",
      "orange": "#d9774a", "text": "#d9c7ae", "muted": "#9d8b76", "track": "#3a2f25", "cream": "#f3ead9",
      "field": "#100d0a"}
-DUB_ACCENT = {"feedback", "self_osc", "fb_drive", "fb_tone", "fb_damping"}
 
 # Unitless 0..1 / -1..1 / 0..2 controls are shown in percent: the dial runs x100 and a
 # [* 0.01] box scales it back before gen~, so the DSP ranges are unchanged.
@@ -122,7 +118,7 @@ def dial(k, prect):
           "parameter_initial": [dflt], "parameter_initial_enable": 1, **unit(k)}
     if k in ("decay", "predelay"):
         va["parameter_exponent"] = 2.0
-    acc = C["orange"] if k in DUB_ACCENT else C["brass"]
+    acc = C["brass"]
     return box(None, (40 + 60 * len(boxes) % 1200, 900, 44, 48), maxclass="live.dial", ins=1, outs=2,
                outlettype=["", "float"], parameter_enable=1, presentation=1,
                presentation_rect=list(prect), saved_attribute_attributes={"valueof": va},
@@ -184,12 +180,10 @@ def build():
     # No arguments: plugin~ defaults to input channels 1 and 2. (A number argument selects ONE
     # channel: "plugin~ 2" is right-input-only, which silenced the device in Live, 19 Nov.)
     pin = box("plugin~", (40, 40, 80, 22), ins=2, outs=2, outlettype=["signal", "signal"])
-    front = gen_box("ech_front", 4, 2, (40, 160, 160, 22))
+    front = gen_box("ech_front", 3, 2, (40, 160, 160, 22))
     conv = gen_box("ech_conv", 1, 2, (40, 240, 120, 22))
-    back = gen_box("ech_back", 5, 4, (40, 320, 260, 22))
+    back = gen_box("ech_back", 5, 3, (40, 320, 260, 22))
     pout = box("plugout~", (40, 420, 80, 22), ins=2, outs=0, outlettype=[])
-    tin_fb = box("tapin~ 100", (340, 380, 70, 22), ins=1, outs=1, outlettype=["tapconnect"])
-    tout_fb = box("tapout~ 0", (340, 410, 70, 22), ins=1, outs=1, outlettype=["signal"])
     tin_sp = box("tapin~ 100", (440, 380, 70, 22), ins=1, outs=1, outlettype=["tapconnect"])
     tout_sp = box("tapout~ 0", (440, 410, 70, 22), ins=1, outs=1, outlettype=["signal"])
     line(pin, 0, front, 0); line(pin, 1, front, 1)
@@ -197,8 +191,9 @@ def build():
     line(front, 0, back, 2); line(front, 1, conv, 0)
     line(conv, 0, back, 3); line(conv, 1, back, 4)
     line(back, 0, pout, 0); line(back, 1, pout, 1)
-    line(back, 2, tin_fb, 0); line(tin_fb, 0, tout_fb, 0); line(tout_fb, 0, front, 2)
-    line(back, 3, tin_sp, 0); line(tin_sp, 0, tout_sp, 0); line(tout_sp, 0, front, 3)
+    # Model>IR: the spring output excites the convolver. The springs run after the convolver
+    # (IR>Model needs that order), so this send crosses back through tapin~/tapout~.
+    line(back, 2, tin_sp, 0); line(tin_sp, 0, tout_sp, 0); line(tout_sp, 0, front, 2)
 
     # ---- IR machinery --------------------------------------------------------------
     irbuf = box("buffer~ ---echIR", (600, 160, 110, 22), ins=1, outs=2, outlettype=["float", "bang"])
@@ -220,9 +215,9 @@ def build():
     tbb = box("t b b", (600, 190, 40, 22), ins=1, outs=2)
     msg_load = box("load", (600, 215, 40, 22), maxclass="message", ins=2, outs=1)
     pre_irsr = box("prepend irsr", (760, 215, 80, 22))
-    route_l = box("route bsize nparts ir_peak have_ir", (600, 270, 220, 22), ins=1, outs=5)
+    route_l = box("route bsize nparts have_ir", (600, 270, 220, 22), ins=1, outs=4)
     pre_bs = box("prepend bsize", (600, 340, 80, 22)); pre_np = box("prepend nparts", (690, 340, 90, 22))
-    pre_pk = box("prepend ir_peak", (790, 340, 90, 22)); pre_hi = box("prepend have_ir", (890, 340, 90, 22))
+    pre_hi = box("prepend have_ir", (890, 340, 90, 22))
     thisdev = box("live.thisdevice", (900, 40, 100, 22), ins=1, outs=3, outlettype=["bang", "int", "int"])
     bind = box("H ---echH", (900, 80, 80, 22), maxclass="message", ins=2, outs=1)
     dsp = box("dspstate~", (1000, 80, 70, 22), ins=1, outs=4, outlettype=["int", "float", "int", "int"])
@@ -241,9 +236,9 @@ def build():
     line(pre_irsr, 0, loader, 0); line(msg_load, 0, loader, 0)
     line(loader, 0, route_l, 0)
     line(route_l, 0, pre_bs, 0); line(route_l, 1, pre_np, 0)
-    line(route_l, 2, pre_pk, 0); line(route_l, 3, pre_hi, 0)
+    line(route_l, 2, pre_hi, 0)
     line(pre_bs, 0, conv, 0); line(pre_np, 0, conv, 0)
-    line(pre_pk, 0, back, 0); line(pre_hi, 0, back, 0)
+    line(pre_hi, 0, back, 0)
     # load order (trigger fires right to left): buffer names -> H binding + sample rate -> IR choice
     t_load = box("t b b b", (900, 60, 60, 22), ins=1, outs=3)
     names = box("names ---echIR ---echH", (1080, 80, 140, 22), maxclass="message", ins=2, outs=1)
@@ -254,16 +249,15 @@ def build():
     line(ui, 3, store, 0); line(store, 0, pre_restore, 0); line(pre_restore, 0, ui, 0)
 
     # ---- UI ---------------------------------------------------------------------------
-    # Five framed sections in one row, footer with brand / status / presets. 169 px tall.
+    # Four framed sections in one row, footer with brand / status / presets. 169 px tall.
     SX, SW, SY, SH, GAP = 6, 158, 4, 142, 6
     COLS = [7, 57, 107]                      # dial x offsets inside a section
     ROW = [22, 84]                           # dial rows (live.dial: name above, value below)
-    DW = SX + 5 * SW + 4 * GAP + 6
+    DW = SX + 4 * SW + 3 * GAP + 6
     panel([0, 0, DW, 169], fill="bg", border=None, rounded=0)
     secs = [("CORE", ["drive", "decay", "tone", "damping", "mix", "output"]),
             ("SPRING", ["boing", "tension", "dispersion", "resonance", "movement"]),
             ("HYBRID", ["ir_level", "model_level", "blend"]),
-            ("DUB", ["feedback", "fb_tone", "fb_drive", "fb_damping", "self_osc"]),
             ("ADVANCED", ["predelay", "width", "modulation"])]
     dial_ids = {}
 
@@ -287,7 +281,7 @@ def build():
         x = SX + n * (SW + GAP)
         panel([x, SY, SW, SH])
         comment(title, (x + 6, SY + 2, SW - 12, 16), size=9, bold=True,
-                color="orange" if title == "DUB" else "brass")
+                color="brass")
         if title in ("HYBRID", "ADVANCED"):
             slots = [(ROW[1], c) for c in COLS]          # dials on the lower row; menus above
         else:
@@ -336,7 +330,7 @@ def build():
     comment("FISHER SPRING", (8, FY, 104, 16), size=11, bold=True, color="brass_hi")
     comment("ECHOLIVITY", (116, FY + 2, 66, 14), size=8, color="muted")
     status = box("no IR loaded", (600, 380, 300, 18), maxclass="comment", ins=1, outs=0, outlettype=[],
-                 presentation=1, presentation_rect=[190, FY + 2, 400, 14], fontsize=8.0, fontname="Arial",
+                 presentation=1, presentation_rect=[190, FY + 2, DW - 236 - 196, 14], fontsize=8.0, fontname="Arial",
                  textcolor=rgba(C["muted"]))
     line(loader, 1, status, 0); line(ui, 2, status, 0)
     comment("PRESET", (DW - 236, FY + 2, 44, 14), size=8, bold=True, color="muted")
@@ -372,7 +366,7 @@ def build():
         "fileversion": 1, "appversion": APPV, "classnamespace": "box", "rect": [40, 80, 1300, 900],
         "openrect": [0, 0, DW, 169], "openinpresentation": 1, "devicewidth": float(DW), "default_fontsize": 10.0,
         "default_fontname": "Arial", "gridsize": [8, 8], "boxes": boxes, "lines": lines,
-        "description": "Echolivity - Fisher Spring Hybrid. Convolution + physical spring model + dub feedback.",
+        "description": "Echolivity - Fisher Spring Hybrid. Convolution + physical spring model.",
         "digest": "Hybrid spring reverb", "tags": "reverb spring dub",
         "dependency_cache": [],
         "latency": 0, "is_mpe": 0, "minimum_live_version": "12.0", "minimum_max_version": "8.6"}}
@@ -394,7 +388,6 @@ BANK_ORDER = [  # Push banks, by panel section
     ("Core", ["Drive", "Decay", "Tone", "Damping", "Mix", "Output"]),
     ("Spring", ["Boing", "Tension", "Dispersion", "Resonance", "Movement"]),
     ("Hybrid", ["Engine Mode", "IR", "IR Level", "Model Level", "Hybrid Blend"]),
-    ("Dub", ["Feedback", "FB Tone", "FB Drive", "FB Damping", "Self-Osc"]),
     ("Advanced", ["Pre-delay", "Width", "Modulation"]),
 ]
 EPOCH = int(os.environ.get("SOURCE_DATE_EPOCH", "1763424000"))  # fixed: reproducible builds

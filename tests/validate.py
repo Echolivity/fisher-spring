@@ -215,47 +215,14 @@ def _levels(y, sr, times):
 
 
 @check
-def feedback_stability_and_safeguards():
-    """osc=0: no growth after input stops at any feedback/mode; never > 0 dBFS."""
-    sr = 48000
-    x = S.place(sr, 12, [(0.05, S.snare(sr)), (0.6, S.rimshot(sr))])
-    ev = {}
-    ok = True
-    for mode in range(5):
-        for fb in [0.5, 1.0]:
-            y, _ = wet(sr, dict(engine_mode=mode, feedback=fb, fb_drive=0.6), "SYN_LongTank2S_A", x=x)
-            lv = _levels(y, sr, [2, 6, 11])
-            pk = float(np.max(np.abs(y)))
-            ev[f"mode{mode}_fb{fb}"] = {"levels_db_2_6_11s": lv, "peak": round(pk, 3)}
-            ok &= pk < 1.0 and lv[2] <= lv[0] + 1.0 and np.isfinite(y).all()
-    return ok, ev
-
-
-@check
-def self_oscillation_controlled():
-    """osc=1: sustains after input stops, bounded by the limiter."""
-    sr = 48000
-    x = S.place(sr, 12, [(0.05, S.rimshot(sr))])
-    ev = {}
-    ok = True
-    for mode in range(5):
-        y, _ = wet(sr, dict(engine_mode=mode, feedback=1.0, self_osc=1.0), "SYN_LongTank2S_A", x=x)
-        lv = _levels(y, sr, [2, 6, 11])
-        pk = float(np.max(np.abs(y)))
-        ev[f"mode{mode}"] = {"levels_db_2_6_11s": lv, "peak": round(pk, 3)}
-        ok &= lv[2] > -35 and pk < 1.0
-    return ok, ev
-
-
-@check
 def dc_offset():
     sr = 48000
     rng = np.random.default_rng(4)
     x = np.clip(rng.standard_normal(sr * 6) * 0.5 + 0.2 * np.sin(np.arange(sr * 6) * 2 * np.pi * 60 / sr), -1, 1)
     ev = {}
     ok = True
-    for name, p in [("max_drive_fb", dict(engine_mode=2, drive=1.0, feedback=0.8, fb_drive=1.0)),
-                    ("self_osc", dict(engine_mode=1, feedback=1.0, self_osc=1.0, fb_drive=1.0))]:
+    for name, p in [("max_drive_parallel", dict(engine_mode=2, drive=1.0)),
+                    ("max_drive_model_resonant", dict(engine_mode=1, drive=1.0, decay=8.0, resonance=1.0))]:
         y, _ = wet(sr, p, "SYN_LongTank2S_A", x=x)
         m = float(np.max(np.abs(y[sr * 2:].mean(axis=0))))
         ev[name] = {"dc_mean": m}
@@ -270,10 +237,10 @@ def denormal_protection():
     ev = {}
     ok = True
     for mode in (1, 2):
-        y, d = wet(sr, dict(engine_mode=mode, decay=8.0, feedback=0.6), "SYN_ShortTank3S_B", x=x)
+        y, d = wet(sr, dict(engine_mode=mode, decay=8.0), "SYN_ShortTank3S_B", x=x)
         tiny = np.finfo(np.float64).tiny
         sub = int(np.sum((np.abs(y) < tiny) & (y != 0)))
-        states = np.concatenate([d.sst, d.bufs.ravel(), d.apbuf.ravel(), d.fst, d.ost, d.ist])
+        states = np.concatenate([d.sst, d.bufs.ravel(), d.apbuf.ravel(), d.ost, d.ist])
         sub_s = int(np.sum((np.abs(states) < tiny) & (states != 0)))
         tail = float(np.max(np.abs(y[-sr:])))
         ev[f"mode{mode}"] = {"subnormal_outputs": sub, "subnormal_states": sub_s, "tail_peak_after_40s": tail}
@@ -308,7 +275,7 @@ def parameter_automation_smooth():
     x = rng.standard_normal(sr * 3) * 0.1
     ev = {}
     ok = True
-    base = dict(engine_mode=2, feedback=0.4)
+    base = dict(engine_mode=2)
     for k, (lo, hi, *_r) in PARAMS.items():
         if k == "engine_mode":
             continue
@@ -399,20 +366,14 @@ def drive_nonlinearity():
 @check
 def every_control_audible():
     """Technical proxy: min vs max of each control changes the output measurably.
-    Context: hybrid params in parallel mode, dub params with feedback on."""
+    Context: hybrid params in parallel mode."""
     sr = 48000
     x = S.reggae_pattern(sr, bars=1)
-    ctx = {"engine_mode": 2, "feedback": 0.6}
+    ctx = {"engine_mode": 2}
     ev = {}
     ok = True
     for k, (lo, hi, *_r) in PARAMS.items():
         c = dict(ctx)
-        if k == "feedback":
-            c["feedback"] = None
-        if k == "self_osc":
-            c["feedback"] = 1.0
-        if k.startswith("fb_"):
-            c["feedback"] = 0.9
         if k == "mix":
             pass
         c = {a: b for a, b in c.items() if b is not None}
@@ -470,8 +431,8 @@ def long_duration_stability():
     ev = {}
     ok = True
     rng = np.random.default_rng(9)
-    for name, p, irn, minutes in [("model_fb", dict(engine_mode=1, feedback=0.8, movement=1.0, modulation=1.0), None, 10),
-                                  ("parallel_fb", dict(engine_mode=2, feedback=0.8, movement=0.5), "SYN_ShortTank3S_B", 2)]:
+    for name, p, irn, minutes in [("model_long", dict(engine_mode=1, decay=8.0, movement=1.0, modulation=1.0), None, 10),
+                                  ("parallel_long", dict(engine_mode=2, decay=8.0, movement=0.5), "SYN_ShortTank3S_B", 2)]:
         hit = S.rimshot(sr)
         x = S.place(sr, minutes * 60, [(t, hit * rng.uniform(0.3, 1)) for t in np.arange(0.1, minutes * 60 - 5, 1.6)])
         t0 = time.time()

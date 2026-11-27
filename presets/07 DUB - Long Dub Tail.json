@@ -1,18 +1,18 @@
 {
-  "name": "Infinite Dub",
+  "name": "Long Dub Tail",
   "number": 7,
   "category": "DUB",
   "tags": [
-    "infinite",
-    "self-oscillation",
-    "performance",
+    "long",
+    "wash",
+    "throw",
     "send"
   ],
-  "description": "Feedback at max with some self-oscillation: holds and builds. Ride Feedback/Self-Osc live; guard is partly off.",
+  "description": "Longest decay on the K-10 tank in parallel with the model: an 8-second dub wash for throws. Ride Mix or the send.",
   "ir": "TP_FISHER_K10_derickgtwk_STEREO_96k",
   "params": {
     "drive": 0.3,
-    "decay": 6.0,
+    "decay": 8.0,
     "tone": -0.1,
     "damping": 0.35,
     "mix": 1.0,
@@ -26,11 +26,6 @@
     "ir_level": 0.0,
     "model_level": 0.0,
     "blend": 0.5,
-    "feedback": 1.0,
-    "fb_tone": 0.0,
-    "fb_drive": 0.45,
-    "fb_damping": 0.5,
-    "self_osc": 0.35,
     "predelay": 0.0,
     "width": 1.0,
     "modulation": 0.15

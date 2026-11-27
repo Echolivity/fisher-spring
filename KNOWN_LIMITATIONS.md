@@ -15,14 +15,13 @@
 - **Load-crash risk (mitigated, unverified):** a hand-built patch with the same structure crashed Live 12.4.15 / Max 9.1.5 inside the gen~ compiler (Twin Phasor 76, Nov 2026). On 18 Nov the build was changed to match Max's own conventions: `obj-N` ids inside the gen~ objects, a root parameter table with Push banks, and the root keys and `project` block Max writes. That fixed Twin Phasor; it hasn't been tested on this device yet. `tools/make_bisect.py` builds a 4-step diagnostic ladder.
 
 ## DSP
-- **Convolution latency:** 21–23 ms on the IR path, not reported to Live. It acts as pre-delay. The dry path has no added latency.
-- **CPU spike:** three FFTs (N = 1024/2048) run in a single sample at every convolution block boundary (every 512/1024 samples). This could crackle at very small buffer sizes.
+- **Convolution latency:** none since 27 Nov 2026 (three-stage convolver; verified outside Max to 1e-15 against convolution with no delay). Not yet confirmed in Live (QA step 9).
+- **CPU:** the long-block FFTs are now spread across samples; the heaviest sample does about 1,900 operations instead of 16,000–34,500. The convolver does about 25–33% more work on average than before. Real Max CPU is unmeasured.
 - **IR length:** IRs are capped at 4 s (longer files are truncated with a 50 ms fade). The two BF "Bird-Verb" files (6–8 s) are affected.
-- **Decay on IRs:** Decay can only shorten an IR. To lengthen one, use Feedback or the Model.
+- **Decay on IRs:** Decay can only shorten an IR. To lengthen one, use the Model, or loop it with a delay return (`docs/DUB_WORKFLOW.md`, R3).
 - **Decay accuracy:** the model's Decay is within about ±17% of target at extreme Tension/Dispersion combinations.
 - **Resampling:** the device's js uses Lanczos-8, the reference uses polyphase. They differ by up to 0.3%.
-- **Feedback loop latency:** one Live audio buffer in the device, 256 samples in the reference. Feedback renders therefore differ slightly from the reference.
-- **Self-Osc character:** the gain control can let the level swell a little before it settles. The constants haven't been tuned by ear.
+- **Model>IR send:** the spring output reaches the convolver one Live audio buffer late (tapin~/tapout~), so Model>IR differs slightly from the reference, which has no delay there.
 - **Stereo:** the K-10 returns the same mono reverb to both channels. Echolivity sends its two springs to L and R by default; Width 0 recreates the K-10. A CENTER-mode equivalent (mono dry + wet) isn't provided.
 - **Drive** isn't calibrated in volts against the K-10's 7247 driver stage.
 

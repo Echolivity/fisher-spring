@@ -51,17 +51,21 @@ cb = fig.colorbar(m, ax=ax, pad=0.01); cb.set_label("dB", color=SUB); cb.ax.yaxi
 finish(ax, fig, "dispersion_spectrogram.png", "Dispersion: each reflection is a chirp, the spring's \"pew\"",
        "Impulse response of the reference engine's physical model (left spring), Dispersion 0.55. Higher frequencies arrive first, so each echo sweeps downward.")
 
-# 2. dub feedback on a rimshot
-x = np.zeros(int(SR * 10)); r = signals.rimshot(SR); x[: len(r)] = r
+# 2. IR path latency: before (uniform partitions, 2B = 1024 samples) and now (zero)
+import soundfile as sf
+from reference.engine import Echolivity
+irx, irsr = sf.read(str(ROOT / "ir/originals/synthetic/SYN_K10Spec_2S.wav"), always_2d=True)
+x = np.zeros(int(SR * 0.25)); x[0] = 1.0
+yy = Echolivity(SR, dict(engine_mode=0, mix=1.0, drive=0.0, decay=8.0, damping=0.0), ir=irx, ir_sr=irsr).process(x)[:, 0]
+w = int(0.001 * SR); env = np.sqrt(np.convolve(yy ** 2, np.ones(w) / w, mode="same"))
+env_db = 20 * np.log10(env / env.max() + 1e-9)
+t = np.arange(len(env)) / SR * 1000
 fig, ax = plt.subplots(figsize=(10, 4.2))
-for lab, p, c in [("Feedback 0", {}, STEEL), ("Feedback 90 %", {"feedback": 0.9}, BRASS),
-                  ("Feedback 90 % + Self-Osc 60 %", {"feedback": 0.9, "self_osc": 0.6}, COPPER)]:
-    yy = render(dict(p, movement=0.3), x)[:, 0]
-    w = int(0.02 * SR); env = np.sqrt(np.convolve(yy ** 2, np.ones(w) / w, mode="same"))
-    ax.plot(np.arange(len(env)) / SR, 20 * np.log10(env + 1e-9), color=c, lw=2, label=lab)
-ax.set_ylim(-80, 0); ax.set_xlim(0, 10)
-ax.set_xlabel("Time (s)"); ax.set_ylabel("Level (dBFS, 20 ms RMS)")
-ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.2), frameon=False, ncol=3, fontsize=10)
-finish(ax, fig, "dub_feedback.png", "One rimshot, three amounts of dub",
-       "Reference engine, Model mode, synthetic rimshot. Feedback regenerates the tail; Self-Osc builds it into a controlled howl, capped by the loop limiter.")
+ax.plot(t + 1024 / SR * 1000, env_db, color=STEEL, lw=1.6, ls="--", label="Before: 1024-sample convolution delay (21.3 ms)")
+ax.plot(t, env_db, color=BRASS, lw=2, label="Now: zero latency")
+ax.set_ylim(-60, 2); ax.set_xlim(0, 160)
+ax.set_xlabel("Time after the hit (ms)"); ax.set_ylabel("Level (dB, 1 ms RMS)")
+ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.2), frameon=False, ncol=2, fontsize=10)
+finish(ax, fig, "ir_latency.png", "The IR path now arrives on time",
+       "IR mode, synthetic K-10-spec IR, 48 kHz, one impulse. Reference engine; the device's gen~ convolver matches it to 1e-15 with no delay (tests/port_check).")
 print("wrote", sorted(p.name for p in OUT.glob("*.png")))

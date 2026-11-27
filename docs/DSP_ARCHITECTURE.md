@@ -5,33 +5,42 @@ Owner: DSP Engineer. The specification is `reference/engine.py`, and the device 
 ## Signal flow
 
 ```
- dry L/R ───────────────────────────────────────────────────────────────┐
-    │                                                                    │
-    └─► mono ─► INPUT DRIVE ─► (+) ─► PREDELAY ─┬─► CONVOLUTION ─┐       │
-                               ▲                └─► SPRING MODEL ─┤      │
-                               │                                  ▼      │
-                               │                          ENGINE ROUTER  │
-                               │                         (5 modes, blend)│
-                               │                                  │ wet  │
-                               └──── DUB FEEDBACK LOOP ◄──────────┤      │
-                                                                  ▼      ▼
-                                   TONE ─► WIDTH ─► OUTPUT COLOUR ─► MIX ─► OUTPUT
+ dry L/R ─────────────────────────────────────────────────────────────┐
+    │                                                                  │
+    └─► mono ─► INPUT DRIVE ─► PREDELAY ─┬─► CONVOLUTION ─┐            │
+                                         └─► SPRING MODEL ─┤           │
+                                                           ▼           │
+                                                    ENGINE ROUTER      │
+                                                   (5 modes, blend)    │
+                                                           │ wet       │
+                                                           ▼           ▼
+                            TONE ─► WIDTH ─► OUTPUT COLOUR ─► MIX ─► OUTPUT
 ```
 
 In the device this is split into three gen~ objects:
 
-- **front:** drive, feedback injection, predelay and the convolution send.
-- **conv:** the partitioned convolver.
-- **back:** springs, router, feedback and output.
+- **front:** drive, predelay and the convolution send.
+- **conv:** the zero-latency convolver.
+- **back:** springs, router and output.
 
-Two `tapin~`/`tapout~` pairs close the loops (dub feedback, and the Model>IR send). Each adds one signal vector of delay. The reference engine processes in 256-sample blocks, so its feedback loop has 256 samples of latency. Feedback timing therefore differs slightly between the two by design.
+One `tapin~`/`tapout~` pair carries the Model>IR send back from the springs (in back) to the convolver input (in front), because IR>Model needs the opposite order. It adds one signal vector of delay in Model>IR only; the reference engine has none, so Model>IR differs slightly between the two. The dub feedback loop was removed on 27 Nov 2026.
 
 The tanks are mono-in like real hardware: the stereo input is summed before the drive stage. Stereo comes from the two different springs, or from the two IR channels.
 
 ## A. Convolution engine
 
-- **Algorithm:** uniformly partitioned overlap-save convolution. The block size B is 512 at 48 kHz and below, and 1024 at 88.2/96 kHz. FFT size is 2B.
-- **Real-time scheduling:** the K partition multiply-accumulates are spread evenly across the B samples of each block. That keeps CPU use per sample flat, except for three FFTs (two inverse, one forward) at each block boundary. The cost is a latency of **2B samples (21.3 ms at 48/96 kHz, 23.2 ms at 44.1/88.2 kHz)**. It behaves as a fixed pre-delay on the IR path. The reference engine adds the same latency, so both produce the same output.
+- **Algorithm (since 27 Nov 2026): zero-latency, three stages.** Each stage's latency equals its offset in the IR, so the sum is exact convolution with no delay:
+
+  | Stage | IR segment | Method | Latency |
+  |---|---|---|---|
+  | Head | 0–127 samples | direct-form FIR | 0 |
+  | Mid | 128 to 4B | overlap-save, 64-sample partitions, FFT 128 | 128 |
+  | Tail | 4B to end | overlap-save, B-sample partitions, FFT 2B | 4B |
+
+  B is 512 at 48 kHz and below, 1024 at 88.2/96 kHz.
+- **Real-time scheduling:** the tail is pipelined one stage per block (forward FFT → multiply-accumulate → inverse FFT → play), and each stage's work is spread evenly over the block's samples, so no sample carries a whole FFT. Both output channels share one inverse FFT (L + iR). The mid stage runs its two 128-point FFTs at its own 64-sample boundary. Counted work for a 4 s IR: the heaviest sample does about 1,900 operations against 16,000 (48 kHz) / 34,500 (96 kHz) before, for about 25–33% more average work.
+- **Verified outside Max:** `tests/port_check/check_conv_port.py` runs the actual `ech_conv.genexpr` (translated line by line) against direct convolution with no delay: error ~1e-15 at 44.1, 48 and 96 kHz, and with an IR shorter than the tail offset. **Max CPU has not been measured.**
+- **Before 27 Nov 2026:** uniform partitions from sample 0, three FFTs in one sample at every block boundary, and 2B samples (21.3–23.2 ms) of latency on the IR path.
 - **IR conditioning** (`prepare_ir`, `ech_ir_loader.js`):
   1. Resample. The reference uses polyphase; the js uses Lanczos-8, and the two differ by ≤0.3% in the port check.
   2. Cap at 4 s with a 50 ms fade.
@@ -39,7 +48,7 @@ The tanks are mono-in like real hardware: the stereo input is summed before the 
   4. Apply Damping: extra decay on the band above 2 kHz, using a zero-phase one-pole split.
   5. Energy-normalise, so white noise in gives the same RMS out.
 - **Mono/stereo IRs:** a mono IR is copied to both channels. A stereo IR convolves the mono tank input separately with each channel.
-- **Recompute:** Decay and Damping changes are debounced by 250 ms, and the resampled IR is cached. While H is rewritten, the convolver is muted (`nparts 0`).
+- **Recompute:** Decay and Damping changes are debounced by 250 ms, and the resampled IR is cached. While H is rewritten, the convolver is muted (`nparts -1`).
 - **CPU (the analysis):** the multiply-accumulate rate is SR × K × 2 channels complex MACs per second. For a 4 s IR at 48 kHz (K = 375) that's about 36 M complex MACs per second (~144 MFLOP/s). **Real cost in Max has not been measured yet** (it's in the register).
 
 ## B. Physical spring model
@@ -88,19 +97,6 @@ Tone, Width and output colour are shared post-processing. Damping and Decay are 
 |---|---|
 | Input drive | Pre-emphasis (up to +8 dB treble) → asymmetric tanh (bias 0.15, so even harmonics) → crossfade into a hard knee (x/(1+\|x\|⁶)^⅙) above 60% → de-emphasis → DC block. Treble distorts first, so the distortion depends on frequency (measured: THD at 3 kHz is greater than at 200 Hz). |
 | Output colour | Asymmetric tanh with unity small-signal gain. Its strength follows Drive. |
-| Feedback saturation | Asymmetric tanh in the dub loop, gain 1–15 (FB Drive). |
 | Loop saturation | tanh inside each spring loop, plus the collision clatter. |
 
 None of these is a hard clip with an "analogue" label. Each curve is smooth and biased, and level-compensated so its small-signal gain doesn't rise with drive.
-
-## Dub feedback
-
-```
-wet ─► mono ─► 2-pole HP + 2-pole LP (FB Tone) ─► LP (FB Damping) ─► asym sat (FB Drive)
-   ─► × (0.98·Feedback + 0.6·Self-Osc) / engine_peak ─► × guard ─► peak limiter (−6 dBFS) ─► DC block ─► back into the tank
-```
-
-- **engine_peak:** an estimate of the active path's loudest spectral peak. For the IR it's measured exactly at load. For the model it's a closed-form estimate (0.4–1× the true peak). For hybrid modes, the peaks are combined by root-sum-square or by the square root of their product. This makes the Feedback knob behave the same on every engine and setting.
-- **Runaway guard:** a slow RMS watch on the loop. Above −20 dBFS (or 6 dB above the Self-Osc target) it pulls the loop gain down to as low as 0.4×. It is turned off in proportion to Self-Osc.
-- **Self-Osc gain control:** a fixed peak estimate can't guarantee unity loop gain on every engine and IR. In early tests, Parallel and Model>IR wouldn't sustain. So with Self-Osc above 0, a gain control raises loop gain at 2 dB/s, up to 16×, until the loop's fast envelope reaches a target (−30 dBFS + 16 dB × Self-Osc), with a ±3 dB deadband. It backs off at 12 dB/s. In practice, higher Self-Osc builds faster and louder: 0.3 blooms over about 6–8 s, 1.0 locks within about 2 s. At Self-Osc 0 it decays back to 1× and has no effect.
-- **Measured:** with Self-Osc at 0, no mode grows after the input stops, even at Feedback 100%. With Self-Osc at 100%, every mode sustains at a steady level, with peaks below 0.75, bounded by the limiter. The full numbers are in the technical validation report.

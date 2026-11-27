@@ -13,8 +13,16 @@
       "correlation": 0.9999999999999901
     },
     "parallel_ir": {
-      "max_rel_error": 3.212591901121526e-07,
-      "correlation": 0.9999999999999983
+      "max_rel_error": 3.354320662652382e-07,
+      "correlation": 0.9999999999999989
+    },
+    "ir_only": {
+      "max_rel_error": 3.347195926567196e-07,
+      "correlation": 0.9999999999999979
+    },
+    "ir_to_model": {
+      "max_rel_error": 2.972510457396715e-07,
+      "correlation": 0.999999999999999
     }
   }
 }

@@ -2,7 +2,6 @@
 
 renders/presets/<preset>__<material>.wav   every factory preset x core material
 renders/engines/rimshot__<IR|Model|Parallel|IR>Model|Model>IR>.wav   hybrid A/B set
-renders/feedback/<material>__fb<..>.wav     feedback & self-oscillation behaviour
 All 48 kHz / 24-bit FLAC, rendered by the reference engine (= device DSP).
 Material is synthesised (see reference/signals.py); judge with your own stems too.
 """
@@ -48,14 +47,8 @@ def main():
         print("preset", p["name"], flush=True)
     x_ir, x_sr = ir("TP_FISHER_K10_derickgtwk_STEREO_96k")
     for mode, name in enumerate(ENGINE_MODES):
-        y = Echolivity(SR, dict(engine_mode=mode, mix=1.0, feedback=0.0), ir=x_ir, ir_sr=x_sr).process(mats["rimshot"])
+        y = Echolivity(SR, dict(engine_mode=mode, mix=1.0), ir=x_ir, ir_sr=x_sr).process(mats["rimshot"])
         write(os.path.join(OUT, "engines", f"rimshot__{name.replace('>', '-to-')}.wav"), y)
-    for m in ["rimshot", "snare", "bass_stab", "dubtechno_chords"]:
-        x = S.place(SR, 12, [(0.1, mats[m][: SR])])
-        for fb, osc in [(0.0, 0.0), (0.6, 0.0), (1.0, 0.0), (1.0, 0.5)]:
-            y = Echolivity(SR, dict(engine_mode=2, mix=1.0, feedback=fb, self_osc=osc, fb_drive=0.5),
-                           ir=x_ir, ir_sr=x_sr).process(x)
-            write(os.path.join(OUT, "feedback", f"{m}__fb{fb}_osc{osc}.wav"), y)
     print("done")
 
 

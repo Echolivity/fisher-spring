@@ -25,14 +25,8 @@ PARAMS = {
     "ir_level":    (-24.0, 6.0, 0.0, "dB", "Hybrid", "Convolution engine level."),
     "model_level": (-24.0, 6.0, 0.0, "dB", "Hybrid", "Physical model level."),
     "blend":       (0.0, 1.0, 0.5,  "",   "Hybrid", "Parallel: equal-power IR<->Model crossfade. Serial: unprocessed 1st engine <-> through both."),
-    # --- Dub -------------------------------------------------------------
-    "feedback":    (0.0, 1.0, 0.0,  "",   "Dub", "Regenerative return of the wet signal into the tank."),
-    "fb_tone":     (-1.0, 1.0, 0.0, "",   "Dub", "Feedback band position: dark/thin (-1) to bright (+1)."),
-    "fb_drive":    (0.0, 1.0, 0.2,  "",   "Dub", "Asymmetric saturation inside the feedback loop."),
-    "fb_damping":  (0.0, 1.0, 0.3,  "",   "Dub", "Per-repeat high-frequency loss in the feedback loop."),
-    "self_osc":    (0.0, 1.0, 0.0,  "",   "Dub", "Lifts loop gain above unity and disables the runaway guard proportionally."),
     # --- Advanced --------------------------------------------------------
-    "predelay":    (0.0, 250.0, 0.0, "ms", "Advanced", "Delay before both engines (inside the feedback loop)."),
+    "predelay":    (0.0, 250.0, 0.0, "ms", "Advanced", "Delay before both engines."),
     "width":       (0.0, 2.0, 1.0,  "",   "Advanced", "Wet stereo width (mid/side)."),
     "modulation":  (0.0, 1.0, 0.15, "",   "Advanced", "Periodic, quadrature LFO on spring length (slow chorus) - distinct from Movement's random drift."),
 }

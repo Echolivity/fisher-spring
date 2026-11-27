@@ -6,12 +6,10 @@ tests/ run against this file.
 
 Signal flow (per block of B samples):
 
-  dry ─┬───────────────────────────────────────────────────────────┐
-       └► mono ─► INPUT DRIVE ─► (+ dub feedback) ─► PREDELAY ─► ENGINES ─► wet
-                                       ▲                                 │
-                                       └──── DUB FEEDBACK LOOP ◄─────────┤
-                                                                         ▼
-                         TONE ─► WIDTH ─► OUTPUT COLORATION ─► MIX(dry) ─► OUTPUT
+  dry ─┬──────────────────────────────────────────────┐
+       └► mono ─► INPUT DRIVE ─► PREDELAY ─► ENGINES ─► wet
+                                                        ▼
+            TONE ─► WIDTH ─► OUTPUT COLORATION ─► MIX(dry) ─► OUTPUT
 """
 import math
 import numpy as np
@@ -19,7 +17,7 @@ from numba import njit
 
 from .params import clamp_params
 
-BLOCK = 256           # processing block; also the dub-feedback loop's minimum latency
+BLOCK = 256           # processing block
 N_AP = 64             # allpass stages per spring
 TINY = 1e-15          # denormal flush threshold
 MAX_IR_S = 4.0        # IR length cap (device CPU budget)
@@ -36,21 +34,10 @@ SPRING_RATIO = 37.0 / 29.0
 DECAY_CAL = 1.15      # residual loss compensation (damping LP, interpolation)
 
 
-def loop_gain(sr, tension, dispersion, decay):
-    """Spring loop gain for a target RT60 (same formula as spring_process)."""
-    K = max(1, int(round(sr / 22050.0)))
-    a0 = -(0.45 + 0.35 * dispersion)
-    loop_s = LOOP_MAX - LOOP_RANGE * tension
-    ap_dc = N_AP * K * (1.0 - a0) / (1.0 + a0)
-    cw = math.cos(K * 2.0 * math.pi * 400.0 / sr)
-    tau = K * (1.0 - a0 * a0) / (1.0 + 2.0 * a0 * cw + a0 * a0)
-    loop_eff = (max(loop_s * sr - ap_dc, 8.0) + N_AP * tau) / sr
-    return 10.0 ** (-3.0 * loop_eff / (DECAY_CAL * decay))
-
-
 def conv_latency(sr):
-    """Latency of the device's gen~ convolver: 2 x block (512 / 1024 above 50 kHz)."""
-    return 2 * (1024 if sr > 50000 else 512)
+    """Latency of the device's gen~ convolver: zero (direct-form head + partitions
+    whose latency equals their offset in the IR; see device/gen/ech_conv.genexpr)."""
+    return 0
 
 
 # ----------------------------------------------------------------------------
@@ -346,78 +333,6 @@ def spring_process(x, outL, outR, st, bufs, wpos_arr, apbuf, apidx, sr, prm):
         st[i] = _flush(st[i])
 
 
-# ----------------------------------------------------------------------------
-# Dub feedback loop
-# ----------------------------------------------------------------------------
-@njit(cache=True)
-def feedback_process(wL, wR, out, st, sr, fb, tone, drv, damp, osc, norm):
-    """st: [hp1, hp2, lp1, lp2, damp, env, guard_rms, guard_gain, dc_x, dc_y, osc_gain]
-    Gain = 0.98*feedback + 0.3*self_osc. A peak limiter (ceiling -6 dBFS) bounds
-    any oscillation. A runaway guard (slow RMS watch, -20 dBFS) pulls gain down
-    when the loop keeps building; self_osc fades the guard out, so intentional
-    oscillation is possible but never accidental."""
-    hp_fc = 150.0 * 2.0 ** (tone * 1.6)
-    lp_fc = 3000.0 * 2.0 ** (tone * 1.6)
-    c_hp = _onepole_coef(hp_fc, sr)
-    c_lp = _onepole_coef(min(lp_fc, 0.45 * sr), sr)
-    c_dm = _onepole_coef(min(16000.0 * (1.0 - damp) ** 2 + 800.0, 0.45 * sr), sr)
-    k = 1.0 + 14.0 * drv
-    b = 0.1 * drv
-    # norm = 1 / (estimated peak spectral gain of the engine path), so that
-    # feedback=1 puts the loudest engine resonance just below unity loop gain.
-    G = (0.98 * fb + 0.6 * osc) * norm
-    ceil = 0.5
-    rel = math.exp(-1.0 / (0.15 * sr))
-    c_rms = _onepole_coef(1.0 / (2 * math.pi * 0.5), sr)
-    guard_strength = 1.0 - osc
-    c_guard_dn = 1.0 / (1.0 * sr)
-    c_guard_up = 1.0 / (2.0 * sr)
-    r_dc = 1.0 - 2.0 * math.pi * 10.0 / sr
-    # self-oscillation AGC: raises loop gain (~3 dB/s) until the loop sustains at a
-    # target RMS set by Self-Osc (-30 dBFS at 0+ ... -14 dBFS at 1). The fixed peak
-    # estimate can't guarantee unity loop gain on every engine/IR; this can.
-    osc_target = 10.0 ** ((-30.0 + 16.0 * osc) / 10.0)
-    agc_up = 10.0 ** (2.0 / 20.0 / sr)
-    agc_dn = 10.0 ** (-12.0 / 20.0 / sr)
-    guard_thr = max(0.01, osc_target * 4.0) if osc > 0.0 else 0.01
-    for n in range(wL.shape[0]):
-        f = 0.5 * (wL[n] + wR[n])
-        st[0] += c_hp * (f - st[0]); f = f - st[0]
-        st[1] += c_hp * (f - st[1]); f = f - st[1]
-        st[2] += c_lp * (f - st[2]); f = st[2]
-        st[3] += c_lp * (f - st[3]); f = st[3]
-        st[4] += c_dm * (f - st[4]); f = st[4]
-        f = _asym_sat(f, k, b)
-        # runaway guard
-        st[6] += c_rms * (f * f - st[6])
-        if guard_strength > 0.0 and st[6] > guard_thr:      # -20 dBFS, or 6 dB over the osc target
-            st[7] -= c_guard_dn * guard_strength
-            if st[7] < 0.4:
-                st[7] = 0.4
-        else:
-            st[7] += c_guard_up
-            if st[7] > 1.0:
-                st[7] = 1.0
-        if osc > 0.0:
-            lvl = st[5] * st[5] * 0.5                          # fast (150 ms) peak env -> power
-            if lvl < 0.5 * osc_target:                       # > 3 dB under target: climb
-                st[10] = min(st[10] * agc_up, 16.0)
-            elif lvl > 2.0 * osc_target:                     # > 3 dB over: back off
-                st[10] = max(st[10] * agc_dn, 1.0)
-        else:
-            st[10] = max(st[10] * agc_dn, 1.0)
-        f = f * G * st[7] * (1.0 + (st[10] - 1.0) * osc)
-        # peak limiter
-        st[5] = max(abs(f), st[5] * rel)
-        if st[5] > ceil:
-            f *= ceil / st[5]
-        dc = f - st[8] + r_dc * st[9]
-        st[8] = f
-        st[9] = _flush(dc)
-        out[n] = st[9]
-    for i in range(11):
-        st[i] = _flush(st[i])
-
 
 # ----------------------------------------------------------------------------
 # Output section
@@ -458,8 +373,7 @@ def output_stage(wL, wR, dL, dR, oL, oR, st, sr, tone, width, drive, mix, out_db
 class PartitionedConvolver:
     def __init__(self, ir, B=BLOCK, latency=0):
         """ir: (n,) or (n, 2) float array at engine sample rate.
-        latency: extra output delay in samples, to match the device's
-        time-distributed gen~ convolver (2 x its block size)."""
+        latency: optional extra output delay in samples (the device adds none)."""
         self.lat = np.zeros((latency, 2))
         ir = np.atleast_2d(np.asarray(ir, dtype=np.float64).T).T
         if ir.shape[1] == 1:
@@ -570,11 +484,9 @@ class Echolivity:
         self.sst[S_RNG] = seed * 2654435761 % 4294967296
         self.sst[S_G_SM] = 0.0
         self.ist = np.zeros(4)
-        self.fst = np.zeros(11); self.fst[7] = 1.0; self.fst[10] = 1.0
         self.ost = np.zeros(6)
         self.pd_buf = np.zeros(int(0.26 * sr) + BLOCK)
         self.pd_w = 0
-        self.fb_prev = np.zeros(BLOCK)
         self._init_delay_sm()
         self.conv = None
         self._ir_key = None
@@ -598,8 +510,6 @@ class Echolivity:
         ir, self.ir_rt60 = prepare_ir(self.ir_raw, self.ir_sr, self.sr,
                                       self.p["decay"], self.p["damping"])
         self.conv = PartitionedConvolver(ir, latency=conv_latency(self.sr))
-        spec = np.abs(np.fft.rfft(ir.mean(axis=1), 1 << int(math.ceil(math.log2(len(ir))))))
-        self.ir_peak = float(spec.max())
         self._ir_key = key
 
     def set(self, **kw):
@@ -626,35 +536,10 @@ class Echolivity:
         self.pd_w = (self.pd_w + len(x)) % n
         return out
 
-    def model_peak(self, decay_scale=1.0):
-        """Closed-form estimate of the spring model's peak spectral gain
-        (measured ratio to true peak 0.4-1.0 => safe side). Mirrored in gen~."""
-        p = self.p
-        g = loop_gain(self.sr, p["tension"], p["dispersion"], p["decay"] * decay_scale)
-        return 0.3 * math.sqrt(1.0 - g * g) * 5.5 / (1.0 - g)
-
-    def _engine_peak(self, mode, have_ir, irg, mdg, b):
-        pm = self.model_peak() * mdg
-        if not have_ir:
-            return 1.0 if mode == 0 else pm
-        pi_ = self.ir_peak * irg
-        if mode == 0:
-            return pi_
-        if mode == 1:
-            return pm
-        if mode == 2:
-            return math.hypot(math.cos(0.5 * math.pi * b) * pi_, math.sin(0.5 * math.pi * b) * pm)
-        pms = self.model_peak(0.3) * mdg
-        # serial: resonances of the two engines rarely coincide -> sqrt of product
-        if mode == 3:
-            return math.hypot((1 - b) * pi_, b * pi_ * math.sqrt(pms))
-        return math.hypot((1 - b) * pms, b * pi_ * (0.5 + pms) ** 0.75)
-
     def process_block(self, L, R):
         p = self.p
         mono = 0.5 * (L + R)
         e = input_stage(mono, self.ist, self.sr, p["drive"])
-        e = e + self.fb_prev
         e = self._predelay(e)
         mode = p["engine_mode"]
         irg = 10 ** (p["ir_level"] / 20); mdg = 10 ** (p["model_level"] / 20)
@@ -688,11 +573,6 @@ class Echolivity:
             cL, cR = self.conv.process(0.5 * (sL + sR) + 0.5 * e)
             cL *= irg; cR *= irg
             wL = (1 - b) * sL + b * cL; wR = (1 - b) * sR + b * cR
-        fb = np.empty_like(e)
-        pk = self._engine_peak(mode, have_ir, irg, mdg, b)
-        feedback_process(wL, wR, fb, self.fst, self.sr, p["feedback"], p["fb_tone"],
-                         p["fb_drive"], p["fb_damping"], p["self_osc"], 1.0 / max(pk, 0.05))
-        self.fb_prev = fb
         oL = np.empty_like(e); oR = np.empty_like(e)
         output_stage(wL, wR, L, R, oL, oR, self.ost, self.sr, p["tone"], p["width"],
                      p["drive"], p["mix"], p["output"])

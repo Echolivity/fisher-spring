@@ -26,11 +26,6 @@
     "ir_level": 0.0,
     "model_level": 0.0,
     "blend": 0.35,
-    "feedback": 0.0,
-    "fb_tone": 0.0,
-    "fb_drive": 0.2,
-    "fb_damping": 0.3,
-    "self_osc": 0.0,
     "predelay": 0.0,
     "width": 1.4,
     "modulation": 0.15

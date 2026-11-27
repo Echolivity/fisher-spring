@@ -1,32 +1,45 @@
 {
   "passed": true,
   "results": {
-    "48000Hz_decay8.0_damp0.0": {
+    "48000Hz_0.5s_decay8.0_damp0.0": {
       "B": 512,
-      "K": 47,
-      "js_ms": 70,
-      "ir_vs_reference_max_rel_err": 8.214424588369203e-15,
-      "ir_peak_rel_err": 8.43769498715119e-15,
-      "gen_conv_vs_direct_max_rel_err": 9.928231429287818e-16,
-      "latency_samples": 1024
+      "K_tail": 43,
+      "js_ms": 55,
+      "ir_vs_reference_max_rel_err": 8.39696735699963e-15,
+      "ir_fully_covered": true,
+      "gen_conv_vs_direct_max_rel_err": 8.568764055152972e-16,
+      "impulse_peak_lag_samples": null,
+      "note": "error is against convolution with NO delay, so it also proves zero latency"
     },
-    "44100Hz_decay1.0_damp0.6": {
+    "44100Hz_0.5s_decay1.0_damp0.6": {
       "B": 512,
-      "K": 44,
-      "js_ms": 384,
-      "ir_vs_reference_max_rel_err": 0.003008152644739758,
-      "ir_peak_rel_err": 0.0022975001615224144,
-      "gen_conv_vs_direct_max_rel_err": 7.2959095712168175e-16,
-      "latency_samples": 1024
+      "K_tail": 40,
+      "js_ms": 331,
+      "ir_vs_reference_max_rel_err": 0.0030081526447399104,
+      "ir_fully_covered": true,
+      "gen_conv_vs_direct_max_rel_err": 8.553825014530065e-16,
+      "impulse_peak_lag_samples": null,
+      "note": "error is against convolution with NO delay, so it also proves zero latency"
     },
-    "96000Hz_decay2.0_damp0.3": {
+    "96000Hz_0.5s_decay2.0_damp0.3": {
       "B": 1024,
-      "K": 47,
-      "js_ms": 792,
-      "ir_vs_reference_max_rel_err": 0.0010360899137512875,
-      "ir_peak_rel_err": 0.00021279821961628365,
-      "gen_conv_vs_direct_max_rel_err": 9.45949518956157e-16,
-      "latency_samples": 2048
+      "K_tail": 43,
+      "js_ms": 674,
+      "ir_vs_reference_max_rel_err": 0.001036089913751168,
+      "ir_fully_covered": true,
+      "gen_conv_vs_direct_max_rel_err": 9.121656075648659e-16,
+      "impulse_peak_lag_samples": null,
+      "note": "error is against convolution with NO delay, so it also proves zero latency"
+    },
+    "48000Hz_0.02s_decay2.0_damp0.3": {
+      "B": 512,
+      "K_tail": 0,
+      "js_ms": 11,
+      "ir_vs_reference_max_rel_err": 5.103133957123147e-16,
+      "ir_fully_covered": true,
+      "gen_conv_vs_direct_max_rel_err": 7.991906432852652e-16,
+      "impulse_peak_lag_samples": 0,
+      "note": "error is against convolution with NO delay, so it also proves zero latency"
     }
   }
 }

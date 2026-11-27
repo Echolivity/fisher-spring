@@ -1,6 +1,6 @@
 // ECHOLIVITY - IR conditioning + partition-spectrum builder for gen~ ech_conv.
 // Mirrors reference/engine.py prepare_ir(): resample -> decay/damping envelope
-// -> energy normalisation -> uniform partitions -> FFT spectra.
+// -> energy normalisation -> head FIR + mid/tail partition spectra (zero latency).
 //
 // [js ech_ir_loader.js ---echIR ---echH]
 // inlet messages:  sr <hz>          host sample rate (dspstate~)
@@ -8,7 +8,7 @@
 //                  decay <s>        damping <0..1>   (debounced recompute)
 //                  load             IR buffer has been (re)filled
 //                  clear            unload IR
-// outlet 0: messages for gen~ (bsize, nparts, ir_peak, have_ir)
+// outlet 0: messages for gen~ (bsize, nparts, have_ir)
 // outlet 1: status text for the UI
 
 autowatch = 1;
@@ -30,7 +30,7 @@ function damping(x) { DAMP = x; schedule(); }
 function load() { loaded = true; cacheKey = ""; rebuild(); }
 function clear() {
 	loaded = false;
-	outlet(0, "nparts", 0);
+	outlet(0, "nparts", -1);
 	outlet(0, "have_ir", 0);
 	outlet(1, "set", "no IR loaded");
 }
@@ -118,7 +118,7 @@ function rebuild() {
 	var ib = new Buffer(irName);
 	var frames = ib.framecount(), chans = Math.min(ib.channelcount(), 2);
 	if (frames < 2) { clear(); outlet(1, "set", "IR empty"); return; }
-	outlet(0, "nparts", 0);                     // mute convolver while rewriting H
+	outlet(0, "nparts", -1);                    // mute convolver while rewriting H
 
 	var ch = [], c, i, key = SR + "/" + IRSR + "/" + frames;
 	if (key !== cacheKey) {
@@ -162,38 +162,38 @@ function rebuild() {
 	var g = 1 / (Math.sqrt(energy / 2) + 1e-12);
 	for (c = 0; c < 2; c++) for (i = 0; i < n; i++) ch[c][i] *= g;
 
-	// partitions
-	var B = SR > 50000 ? 1024 : 512, N = 2 * B;
-	var K = Math.min(Math.ceil(n / B), MAX_PARTS);
+	// three-stage layout for ech_conv.genexpr (zero latency):
+	//   [0, F)               head FIR taps h[0..F)
+	//   [F, offT)            mid: 64-sample partitions of h[F..T0), FFT 128
+	//   [offT, ...)          tail: B-sample partitions of h[T0..), FFT 2B
+	var F = 128, BM = 64, B = SR > 50000 ? 1024 : 512, T0 = 4 * B;
+	var KM = (T0 - F) / BM, offT = F + KM * (BM + 1) * 2;
+	var K = Math.min(Math.max(0, Math.ceil((n - T0) / B)), MAX_PARTS);
 	var hb = new Buffer(hName);
-	hb.send("sizeinsamps", K * (B + 1) * 2);
-	var re, im, k, out;
-	for (c = 0; c < 2; c++) {
-		for (k = 0; k < K; k++) {
-			re = zeros(N); im = zeros(N);
-			for (i = 0; i < B; i++) {
-				var idx = k * B + i;
-				re[i] = idx < n ? ch[c][idx] : 0;
-			}
-			fft(re, im, N, -1);
-			out = new Array(2 * (B + 1));
-			for (i = 0; i <= B; i++) { out[2 * i] = re[i]; out[2 * i + 1] = im[i]; }
-			hb.poke(c + 1, k * (B + 1) * 2, out);
+	hb.send("sizeinsamps", offT + K * (B + 1) * 2);
+	var re, im, k, out, idx;
+	function spectrum(c, start, len, nfft, at) {
+		re = zeros(nfft); im = zeros(nfft);
+		for (i = 0; i < len; i++) {
+			idx = start + i;
+			re[i] = idx < n ? ch[c][idx] : 0;
 		}
+		fft(re, im, nfft, -1);
+		out = new Array(nfft + 2);
+		for (i = 0; i <= nfft / 2; i++) { out[2 * i] = re[i]; out[2 * i + 1] = im[i]; }
+		hb.poke(c + 1, at, out);
+	}
+	for (c = 0; c < 2; c++) {
+		out = new Array(F);
+		for (i = 0; i < F; i++) out[i] = i < n ? ch[c][i] : 0;
+		hb.poke(c + 1, 0, out);
+		for (k = 0; k < KM; k++) spectrum(c, F + k * BM, BM, 2 * BM, F + k * (BM + 1) * 2);
+		for (k = 0; k < K; k++) spectrum(c, T0 + k * B, B, 2 * B, offT + k * (B + 1) * 2);
 	}
 
-	// peak spectral gain of the mono IR (feedback normalisation)
-	var P = 1; while (P < n) P <<= 1;
-	re = zeros(P); im = zeros(P);
-	for (i = 0; i < n; i++) re[i] = 0.5 * (ch[0][i] + ch[1][i]);
-	fft(re, im, P, -1);
-	var pk = 0;
-	for (i = 0; i <= P / 2; i++) pk = Math.max(pk, Math.sqrt(re[i] * re[i] + im[i] * im[i]));
-
 	outlet(0, "bsize", B);
-	outlet(0, "ir_peak", pk);
 	outlet(0, "nparts", K);
 	outlet(0, "have_ir", 1);
 	outlet(1, "set", "IR " + chans + "ch " + IRSR + "Hz  RT60 " + rtIr.toFixed(2) + "s  " +
-		(n / SR).toFixed(2) + "s  lat " + (1000 * 2 * B / SR).toFixed(1) + "ms");
+		(n / SR).toFixed(2) + "s");
 }

@@ -1,7 +1,6 @@
 // ECHOLIVITY gen~ FRONT
-// Port of reference/engine.py: input_stage(), feedback injection, predelay,
-// convolution send routing.
-// in1 L, in2 R, in3 dub feedback return (tapout~), in4 spring->IR send (tapout~)
+// Port of reference/engine.py: input_stage(), predelay, convolution send routing.
+// in1 L, in2 R, in3 spring->IR send (tapout~, Model>IR only)
 // out1 engine input eng (mono), out2 convolution input
 // gen~ rule: function definitions must come before every other statement
 
@@ -46,8 +45,7 @@ dc = y2 - dcx + r_dc * dcy;
 dcx = y2;
 dcy = fixdenorm(dc);
 
-// dub feedback enters after the drive stage, before predelay (inside the loop)
-e0 = dc + in3;
+e0 = dc;
 
 // predelay (smoothed, linear interpolation)
 pd_t = predelay * 0.001 * samplerate;
@@ -58,4 +56,4 @@ eng = pd_s < 1 ? e0 : pd.read(pd_s, interp="linear");
 
 out1 = eng;
 // Model>IR: the IR is excited by the spring output plus half the direct signal
-out2 = engine_mode > 3.5 ? (in4 + 0.5 * eng) : eng;
+out2 = engine_mode > 3.5 ? (in3 + 0.5 * eng) : eng;

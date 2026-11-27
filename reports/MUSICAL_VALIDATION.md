@@ -7,7 +7,6 @@ Owners: Dub Producer, Dub Organiser, and the Sound Designer for textures.
 ## Material
 - **Renders:** `renders/` holds every preset × rimshot, snare, reggae pattern, dub-techno chords, bass stab and sustained synth.
   - `renders/engines/` is the hybrid A/B set: the same rimshot through IR, Model, Parallel, IR>Model and Model>IR, with the K-10 IR.
-  - `renders/feedback/` covers Feedback 0 / 0.6 / 1.0 and Self-Osc 0.5.
 - **Test material is synthesised** (`reference/signals.py`). It has to be repeated with real stems: your own rimshots, snares, hi-hats, percussion loops, reggae and dub-techno sessions, and full mixes.
 
 ## Protocol
@@ -35,8 +34,8 @@ Owners: Dub Producer, Dub Organiser, and the Sound Designer for textures.
 - [ ] Is hybrid audibly better than either engine alone? (`renders/engines/`) **This is the open question in the architecture.**
 - [ ] Does the model at the K-10 Tension of 0.44 sound like a spring and not like an algorithmic reverb?
 - [ ] Do Drive and the saturation stages respond musically, or do they just get louder and dirtier?
-- [ ] Is feedback controllable during a performance? Is the guard too eager or too lax?
-- [ ] Which of the 23 controls go unused in real sessions? (Feeds the production usability report.)
+- [ ] With the convolution delay gone (27 Nov 2026), does the IR engine still sit well in a dub mix, or was the old 21 ms acting as useful pre-delay? (Pre-delay can add it back.)
+- [ ] Which of the 18 controls go unused in real sessions? (Feeds the production usability report.)
 - [ ] Are the 10 presets genuinely different in use?
 
 ## Sign-off

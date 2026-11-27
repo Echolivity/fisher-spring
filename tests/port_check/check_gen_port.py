@@ -30,7 +30,7 @@ def run_gen(x, sr, params, ir=None, irsr=None):
         conv = Conv(sr, rng)
         conv.H.a = np.stack([np.array(js["H"][0]), np.array(js["H"][1])], 1)
         conv.bsize = msgs["bsize"]; conv.nparts = msgs["nparts"]
-        b.ir_peak = msgs["ir_peak"]; b.have_ir = 1.0
+        b.have_ir = 1.0
     from reference.params import defaults
     for k, v in {**defaults(), **params}.items():
         k = {"mix": "drywet"}.get(k, k)
@@ -38,13 +38,13 @@ def run_gen(x, sr, params, ir=None, irsr=None):
             if hasattr(o, k):
                 setattr(o, k, float(v))
     out = np.zeros((len(x), 2))
-    fb = spr = 0.0
+    spr = 0.0
     for n in range(len(x)):
-        e, cin = f.tick(x[n], x[n], fb, spr)[:2]
+        e, cin = f.tick(x[n], x[n], spr)[:2]
         cl = cr = 0.0
         if conv is not None:
             cl, cr = conv.tick(cin)[:2]
-        o1, o2, fb, spr = b.tick(x[n], x[n], e, cl, cr)
+        o1, o2, spr = b.tick(x[n], x[n], e, cl, cr)[:3]
         out[n] = (o1, o2)
     return out
 
@@ -72,11 +72,13 @@ def main():
     ok = not bad
     sr = 48000
     x = S.place(sr, 1.0, [(0.32, S.snare(sr)), (0.6, S.rimshot(sr))])
-    base = dict(movement=0.0, boing=0.0, mix=1.0, feedback=0.0)
+    base = dict(movement=0.0, boing=0.0, mix=1.0)
     cases = [("model_default", dict(engine_mode=1), None),
              ("model_drive_dark", dict(engine_mode=1, drive=0.8, decay=5.0, damping=0.7, tension=0.2,
                                        resonance=0.9, tone=-0.6, width=1.6, modulation=0.6, predelay=20.0), None),
-             ("parallel_ir", dict(engine_mode=2, blend=0.5, decay=8.0, damping=0.0), "SYN_ShortTank3S_B")]
+             ("parallel_ir", dict(engine_mode=2, blend=0.5, decay=8.0, damping=0.0), "SYN_ShortTank3S_B"),
+             ("ir_only", dict(engine_mode=0, decay=8.0, damping=0.0), "SYN_LongTank2S_A"),
+             ("ir_to_model", dict(engine_mode=3, blend=0.6, decay=3.0, damping=0.3), "SYN_ShortTank3S_B")]
     for name, p, irn in cases:
         p = {**base, **p}
         ir = irsr = None

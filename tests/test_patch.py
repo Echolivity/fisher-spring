@@ -97,8 +97,7 @@ def test_dials_reach_dsp_in_dsp_units():
             "drive": "Drive", "decay": "Decay", "tone": "Tone", "damping": "Damping", "mix": "Mix", "output": "Output",
             "boing": "Boing", "tension": "Tension", "dispersion": "Dispersion", "resonance": "Resonance",
             "movement": "Movement", "ir_level": "IR Level", "model_level": "Model Level", "blend": "Hybrid Blend",
-            "feedback": "Feedback", "fb_tone": "FB Tone", "fb_drive": "FB Drive", "fb_damping": "FB Damping",
-            "self_osc": "Self-Osc", "predelay": "Pre-delay", "width": "Width", "modulation": "Modulation"}.get(k))
+            "predelay": "Pre-delay", "width": "Width", "modulation": "Modulation"}.get(k))
         factor = 1.0
         targets = [BOXES[l["destination"][0]] for l in outgoing(b["id"])]
         if len(targets) == 1 and targets[0].get("text") == "* 0.01":

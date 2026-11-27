@@ -12,7 +12,7 @@
 
 **A hybrid spring reverb for Ableton Live.**
 
-Convolution with real spring tanks, a physical spring model voiced from the Fisher K-10 service manual, analogue-style saturation and a dub feedback loop that can be pushed into controlled self-oscillation.
+Zero-latency convolution with real spring tanks, a physical spring model voiced from the Fisher K-10 service manual, and analogue-style saturation.
 
 [Features](#features) · [Install](#install) · [Controls](#controls) · [Presets](#presets) · [Validation](#validation-and-known-limitations) · [Developers](#developer-quick-reference)
 
@@ -35,7 +35,7 @@ Convolution with real spring tanks, a physical spring model voiced from the Fish
 - **Five hybrid modes:** IR, Model, Parallel, IR›Model (the real tank feeds the model's sway) and Model›IR (the model excites the real tank).
 - **K-10 voicing:** at the default Tension of 0.44, the model's spring arrivals match the service manual's 29 / 37 / 87 / 111 ms within 2 ms.
 - **Drive** with pre-emphasis, so highs saturate first, moving from soft to hard clip.
-- **Dub feedback:** Feedback, FB Tone, FB Drive, FB Damping and **Self-Osc**, a controlled howl capped by a loop limiter.
+- **Zero-latency convolution:** the IR path arrives on time, so spring arrivals keep their real timing and nothing needs delay compensation.
 - **Open IR library:** 5 synthetic IRs included. Drop any WAV onto the device to use your own.
 - **10 factory presets** across reference, dub, texture and percussion.
 
@@ -47,9 +47,9 @@ Convolution with real spring tanks, a physical spring model voiced from the Fish
 
 <sub>The model's impulse response. Every reflection is a downward chirp, the "pew" that makes a spring sound like a spring.</sub>
 
-![Dub feedback](docs/img/dub_feedback.png)
+![IR path latency](docs/img/ir_latency.png)
 
-<sub>A single rimshot. Feedback stretches the tail; Self-Osc builds it into a sustained howl that the loop limiter holds near −6 dBFS. Pull Self-Osc back to 0 and it dies away.</sub>
+<sub>One hit through the IR engine. Until 27 Nov 2026 the convolution added 21 ms (dashed); it now adds none, so the tank's first arrival lands where the IR puts it.</sub>
 
 <sub>Both plots are rendered from the Python reference engine by `tools/make_readme_plots.py`. They are simulations, not recordings of the device in Live.</sub>
 
@@ -62,11 +62,9 @@ This is a **character model voiced from published K-10 documentation, not a hard
 3. If Live won't open the `.amxd` or crashes, **save your work first** and run the diagnostic ladder (`python tools/make_bisect.py OUT`, then load the test devices from inside `device/`); the first one that crashes shows which part is responsible. The patch structure was aligned with what Max itself saves on 18 Nov 2026, after the same hand-built pattern crashed another Echolivity device. As a fallback, drop an empty *Max Audio Effect* on a track, open it in Max, open [`device/Echolivity.maxpat`](device/Echolivity.maxpat), copy everything into the device, and save. See [`docs/QA_PROTOCOL.md`](docs/QA_PROTOCOL.md), step 1.
 4. Needs **Live 12 with Max 9** (the scripts are embedded with `v8.codebox`; no loose `.js` files). Before moving the device to another machine, you can still **Freeze** it in Max. The IR library still has to sit at `../ir/processed/` relative to the device, or you can drop WAVs onto the IR zone instead.
 
-**Recommended use:** put it on a return track with Mix at 100 %, and send rimshots, snares, skanks and chords to it. Turn Feedback up for regeneration and ride Self-Osc during a performance. More recipes are in [`docs/DUB_WORKFLOW.md`](docs/DUB_WORKFLOW.md).
+**Recommended use:** put it on a return track with Mix at 100 %, and send rimshots, snares, skanks and chords to it. For regeneration, feed it from a delay return (recipes in the workflow guide). More recipes are in [`docs/DUB_WORKFLOW.md`](docs/DUB_WORKFLOW.md).
 
 ## Controls
-
-**Recommended use:** put Echolivity on a return track with Mix at 100%, and send rimshots, snares, skanks and chords to it. Turn Feedback up for regeneration. Ride Self-Osc during a performance.
 
 ### Core
 - **Drive:** input saturation into the tank driver. Highs saturate first (pre-emphasis). Above about 60% it moves from soft to a harder clip. It also adds even-harmonic colour at the output.
@@ -95,22 +93,15 @@ This is a **character model voiced from published K-10 documentation, not a hard
   - In Parallel, an equal-power crossfade from IR to Model.
   - In the serial modes, a crossfade from the first engine alone to the signal through both engines.
 
-### Dub
-- **Feedback:** returns the wet signal into the tank. It's scaled to the active engine's loudest resonance, so 100% sits just below sustained howl.
-- **FB Tone:** where the feedback band sits: dark and thin at −1, bright at +1.
-- **FB Drive:** saturation inside the loop. Repeats get denser and grittier.
-- **FB Damping:** treble lost on every pass.
-- **Self-Osc:** turns the loop into a controlled howl. Low settings bloom slowly; high settings lock in within about 2 s and sit louder. It turns the runaway guard off proportionally. A limiter caps the loop at about −6 dBFS. Pull it back to 0 and the howl dies away.
-
 ### Advanced
 - **IR menu:** the library IRs (Fisher K-10 first, then other third-party tanks, then synthetic), plus *User IR*. Drop any mono or stereo WAV onto the zone below the menu. The device resamples it and caps it at 4 s.
-- **Pre-delay:** 0 to 250 ms before both engines, inside the feedback loop.
+- **Pre-delay:** 0 to 250 ms before both engines.
 - **Width:** mid/side width of the wet signal, from 0 to 200%.
 - **Modulation:** a slow periodic chorus on spring length. It's separate from Movement, which is random.
 
 The **PRESET** menu loads the factory presets. The IR each preset expects is loaded with it. Live's own device presets (`.adv`) work as usual.
 
-**Latency:** the convolution engine adds a fixed ~21–23 ms to the IR path. It acts as built-in pre-delay and is not reported to Live. The dry path has no added latency.
+**Latency:** none on the dry, model or IR paths, so there is nothing to report to Live. The one exception is *Model>IR*, where the spring output reaches the convolver one Live audio buffer late (see the known limitations).
 
 ## Presets
 
@@ -118,14 +109,14 @@ The **PRESET** menu loads the factory presets. The IR each preset expects is loa
 |---|---|---|---|---|
 | 1 | Fisher Reference | REF | Fisher K-10 † | The K-10 IR alone, natural decay |
 | 2 | Vintage Splash | REF | Fender Deluxe † | Bright parallel hybrid: tank body with model boing and drip |
-| 3 | Deep Dub Spring | DUB | Fisher K-10 † | Long, warm send spring with gentle regeneration |
+| 3 | Deep Dub Spring | DUB | Fisher K-10 † | Long, warm send spring |
 | 4 | Metallic Resonance | TEX | Short Tank (synthetic) | Model-led singing metallic mode, tuned by Tension |
-| 5 | Heavy Pressure | DUB | Dark Tank (synthetic) | Hard-driven tank with saturated feedback |
+| 5 | Heavy Pressure | DUB | Dark Tank (synthetic) | Hard-driven tank: thick, compressed dub wall |
 | 6 | Dark Chamber | REF | Dark Tank (synthetic) | Smooth, dark tank, like a small room |
-| 7 | Infinite Dub | DUB | Fisher K-10 † | Feedback at max with some self-oscillation |
+| 7 | Long Dub Tail | DUB | Fisher K-10 † | 8-second parallel wash for throws |
 | 8 | Broken Spring | TEX | Splash Tank (synthetic) | Jolts, pitch lurches and clatter |
 | 9 | Short Percussion Spring | PERC | 70s Stereo Spring † | Short, tight and bright, for hats and percussion |
-| 10 | Experimental Mechanical | TEX | Dark Tank (synthetic) | Model›IR with saturated feedback: grinding drones |
+| 10 | Experimental Mechanical | TEX | Dark Tank (synthetic) | Model›IR, high resonance: grinding textures |
 
 <sub>† Third-party IR, not included in this repository because its licence is unconfirmed. These presets need the IR added locally; see [`ir/originals/third_party/README.md`](ir/originals/third_party/README.md).</sub>
 
@@ -133,17 +124,16 @@ The **PRESET** menu loads the factory presets. The IR each preset expects is loa
 
 | Area | State |
 |---|---|
-| Reference engine | Technically validated: convolution exactness, decay, damping, sample rates, denormals, feedback safety, long-duration stability, presets |
+| Reference engine | Technically validated: convolution exactness, decay, damping, sample rates, denormals, long-duration stability, presets |
 | Device code (gen~ and js) | Matches the reference outside Max (correlation 0.99999, convolution error ~1e-15) |
 | Max / Live | **Not yet opened**: compiling, loading, UI, CPU and automation are all open |
 | Fisher authenticity | Timing and spectrum match the manual and a third-party K-10 IR; no capture of our own yet |
 | Musical validation | **Not done**: no listening tests yet |
 
 Main limitations:
-- The IR path adds 21–23 ms of latency, which isn't reported to Live; it acts as built-in pre-delay.
 - IRs are capped at 4 s.
 - Decay can only shorten an IR.
-- The convolution FFTs may crackle at very small buffer sizes.
+- Model>IR mode delays the spring→IR send by one Live audio buffer.
 - The third-party IR licences are unconfirmed.
 
 Full lists: [`KNOWN_LIMITATIONS.md`](KNOWN_LIMITATIONS.md) · [`DEVELOPMENT_REGISTER.md`](DEVELOPMENT_REGISTER.md) · [`reports/TECHNICAL_VALIDATION.md`](reports/TECHNICAL_VALIDATION.md) · [`docs/QA_PROTOCOL.md`](docs/QA_PROTOCOL.md).

@@ -7,7 +7,7 @@
 3. python tools/compare_render.py qa/bounced/<case>.wav --preset "03 DUB - Deep Dub Spring" --input impulse
 
 Reports latency-aligned correlation and level difference. Pass: corr >= 0.99, |level| <= 0.5 dB.
-(Feedback cases differ slightly by design: Live's vector size sets the feedback-loop latency.)
+(Model>IR differs slightly by design: Live's vector size delays the spring->IR send.)
 """
 import argparse, json, os, sys
 import numpy as np

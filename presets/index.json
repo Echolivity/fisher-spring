@@ -34,11 +34,10 @@
       "send",
       "warm",
       "rimshot",
-      "snare",
-      "regeneration"
+      "snare"
     ],
     "ir": "TP_FISHER_K10_derickgtwk_STEREO_96k",
-    "description": "Long, warm send spring with gentle regeneration. The default rimshot/snare send.",
+    "description": "Long, warm send spring. The default rimshot/snare send.",
     "file": "03 DUB - Deep Dub Spring.json"
   },
   {
@@ -65,7 +64,7 @@
       "loud"
     ],
     "ir": "SYN_DarkTank2S_C",
-    "description": "Hard-driven tank with saturated feedback - thick, compressed, distorted dub wall.",
+    "description": "Hard-driven tank - thick, compressed, distorted dub wall.",
     "file": "05 DUB - Heavy Pressure.json"
   },
   {
@@ -84,17 +83,17 @@
   },
   {
     "number": 7,
-    "name": "Infinite Dub",
+    "name": "Long Dub Tail",
     "category": "DUB",
     "tags": [
-      "infinite",
-      "self-oscillation",
-      "performance",
+      "long",
+      "wash",
+      "throw",
       "send"
     ],
     "ir": "TP_FISHER_K10_derickgtwk_STEREO_96k",
-    "description": "Feedback at max with some self-oscillation: holds and builds. Ride Feedback/Self-Osc live; guard is partly off.",
-    "file": "07 DUB - Infinite Dub.json"
+    "description": "Longest decay on the K-10 tank in parallel with the model: an 8-second dub wash for throws. Ride Mix or the send.",
+    "file": "07 DUB - Long Dub Tail.json"
   },
   {
     "number": 8,
@@ -135,7 +134,7 @@
       "pads"
     ],
     "ir": "SYN_DarkTank2S_C",
-    "description": "Model > IR with saturated feedback and slow modulation: grinding, mechanical drones from chords and pads.",
+    "description": "Model > IR with high resonance and slow modulation: grinding, mechanical textures from chords and pads.",
     "file": "10 TEX - Experimental Mechanical.json"
   }
 ]

@@ -23,11 +23,12 @@ def main():
         p = os.path.join(R, n + ".json")
         ports[n] = json.load(open(p)) if os.path.exists(p) else {"passed": False, "results": "not run"}
     n_pass = sum(v["passed"] for v in tv.values()) + sum(v["passed"] for v in ports.values())
-    n_all = len(tv) + len(ports)
+    n_skip = sum(1 for v in tv.values() if v.get("not_run"))
+    n_all = len(tv) + len(ports) - n_skip
     out = ["# Technical validation report", "",
            f"Generated {datetime.date.today().isoformat()} by `tools/make_report.py` on {platform.machine()} "
            f"/ Python {platform.python_version()}.", "",
-           f"**{n_pass} of {n_all} checks passed.**", "",
+           f"**{n_pass} of {n_all} checks passed**" + (f"; {n_skip} not run (they need the third-party K-10 IR, which is not in the repository)." if n_skip else "."), "",
            "## What this covers, and what it doesn't", "",
            "- **Covered:** the reference DSP engine (`reference/engine.py`), the IR library audit, presets, "
            "and the Max port: the device's own GenExpr and JavaScript, run outside Max and compared "
@@ -40,12 +41,13 @@ def main():
            "python tests/port_check/check_gen_port.py && python tools/make_report.py`", "",
            "| Check | Result | Time |", "|---|---|---|"]
     for k, v in tv.items():
-        out.append(f"| {k} | {'PASS' if v['passed'] else '**FAIL**'} | {v['seconds']} s |")
+        st = "NOT RUN" if v.get("not_run") else ("PASS" if v["passed"] else "**FAIL**")
+        out.append(f"| {k} | {st} | {v['seconds']} s |")
     for k, v in ports.items():
         out.append(f"| {k} (Max port) | {'PASS' if v['passed'] else '**FAIL**'} | - |")
     out += ["", "## Evidence", ""]
     for k, v in tv.items():
-        out += [f"### {k} - {'PASS' if v['passed'] else 'FAIL'}", ""]
+        out += [f"### {k} - {'NOT RUN' if v.get('not_run') else ('PASS' if v['passed'] else 'FAIL')}", ""]
         if v.get("doc"):
             out += [v["doc"], ""]
         out += [fmt(v["evidence"]), ""]

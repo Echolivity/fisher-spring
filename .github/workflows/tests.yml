@@ -1,0 +1,64 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PY_DEPS: numpy==2.5.3 numba==0.68.1 scipy==1.18.1 soundfile==0.14.0 matplotlib==3.11.2 pytest
+
+jobs:
+  patch:
+    name: patch + port checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: pip install $PY_DEPS
+      - name: Committed device matches a fresh build
+        run: |
+          python tools/build_device.py
+          git diff --stat --exit-code -- device/
+      - name: Patch tests
+        run: python -m pytest -q tests/test_patch.py
+      - name: gen~ port check
+        run: python tests/port_check/check_gen_port.py
+      - name: Convolution port check
+        run: python tests/port_check/check_conv_port.py
+
+  validation:
+    name: technical validation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install $PY_DEPS
+      # The three K-10 checks need TP_FISHER_K10, a third-party IR that is not
+      # redistributed (licence unconfirmed), so CI skips them. Run them locally.
+      - name: Validation suite (without K-10 IR checks)
+        run: |
+          python - <<'PY'
+          import sys
+          sys.path.insert(0, ".")
+          sys.argv = ["validate"]
+          import tests.validate as v
+          skip = {"k10_geometry_and_ir_evidence", "k10_spectrum_match", "preset_library"}
+          res = v.run_all([n for n in v.CHECKS if n not in skip])
+          failed = [n for n, r in res.items() if not r["passed"]]
+          print(f"\n{len(res) - len(failed)}/{len(res)} passed; skipped (need K-10 IR): {sorted(skip)}")
+          sys.exit(1 if failed else 0)
+          PY

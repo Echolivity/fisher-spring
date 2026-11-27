@@ -19,6 +19,7 @@ Convolution with real spring tanks, a physical spring model voiced from the Fish
 ![Ableton Live 12](https://img.shields.io/badge/Ableton-Live%2012-ff764d)
 ![Max for Live](https://img.shields.io/badge/Max%20for%20Live-required-cb8b4b)
 ![Status](https://img.shields.io/badge/status-untested%20in%20Live-d9774a)
+[![Tests](https://github.com/Echolivity/fisher-spring/actions/workflows/tests.yml/badge.svg)](https://github.com/Echolivity/fisher-spring/actions/workflows/tests.yml)
 
 </div>
 

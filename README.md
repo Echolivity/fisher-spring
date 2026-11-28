@@ -18,7 +18,7 @@ Zero-latency convolution with real spring tanks, a physical spring model voiced 
 
 ![Ableton Live 12](https://img.shields.io/badge/Ableton-Live%2012-ff764d)
 ![Max for Live](https://img.shields.io/badge/Max%20for%20Live-required-cb8b4b)
-![Status](https://img.shields.io/badge/status-untested%20in%20Live-d9774a)
+![Status](https://img.shields.io/badge/status-tested%20in%20Live%2012-6f9a52)
 [![Tests](https://github.com/Echolivity/fisher-spring/actions/workflows/tests.yml/badge.svg)](https://github.com/Echolivity/fisher-spring/actions/workflows/tests.yml)
 
 </div>
@@ -126,7 +126,7 @@ The **PRESET** menu loads the factory presets. The IR each preset expects is loa
 |---|---|
 | Reference engine | Technically validated: convolution exactness, decay, damping, sample rates, denormals, long-duration stability, presets |
 | Device code (gen~ and js) | Matches the reference outside Max (correlation 0.99999, convolution error ~1e-15) |
-| Max / Live | **Not yet opened**: compiling, loading, UI, CPU and automation are all open |
+| Max / Live | **Owner-tested in Live 12 on 28 Nov 2026:** loads, IR mode plays without crackle at buffers 256 and 128, IR path in time with the dry signal (no gap), all five engine modes and an IR change while playing, all 10 presets, CPU with one and two instances. Still open: the rest of `docs/QA_PROTOCOL.md` (automation, long runs, sample-rate switching) |
 | Fisher authenticity | Timing and spectrum match the manual and a third-party K-10 IR; no capture of our own yet |
 | Musical validation | **Not done**: no listening tests yet |
 
